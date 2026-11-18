@@ -14,6 +14,8 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 - **Taht değişimi:** fotoğraf taşıyıcısı değişince tam ekran altın ışınlı duyuru.
 - **Rekabet:** ilk 3 hediye sıralaması ve "@x tahta 251 puan uzakta" ilerleme çubuğu.
 - **Dönen çağrı şeridi:** yorum, beğeni, takip ve hediyenin ne işe yaradığını sırayla anlatır.
+- **Anma anı:** overlay'de 2,5 dakikada bir, ortalık sakinken fotoğraflı "Hatırası kalbimizde" kartı ve mum yakma çağrısı çıkar.
+- **Işıltı:** mumlar, fenerler ve altın detaylar yumuşakça parlar. Zayıf bilgisayarda `&nobloom=1` ile kapatılabilir.
 - **Sağlamlık:** 3D motoru yerelden sunulur (CDN gerekmez), bağlantı koparsa otomatik yeniden bağlanır, yayın bitince durur.
 
 ## Windows'ta 1 dakikada çalıştır
