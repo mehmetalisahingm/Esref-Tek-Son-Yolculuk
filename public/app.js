@@ -55,7 +55,7 @@ function nextAlert() {
   const a = alertQueue.shift();
   if (!a) { alertBusy = false; return; }
   alertBusy = true;
-  if (a.kind === 'portrait') return takeover(a);
+  if (a.kind === 'portrait' || a.kind === 'memorial') return takeover(a);
   const el = document.createElement('div');
   el.className = `alert ${a.kind}${a.big ? ' big' : ''}`;
   const icon = document.createElement('span'); icon.className = 'alert-icon'; icon.textContent = a.icon;
@@ -69,10 +69,13 @@ function nextAlert() {
 }
 function takeover(a) {
   const root = $('#takeover');
-  text('#takeover-name', a.title); text('#takeover-detail', a.sub);
+  const memorial = a.kind === 'memorial';
+  root.classList.toggle('memorial', memorial);
+  text('#takeover-kicker', memorial ? '✦ HATIRASI KALBİMİZDE ✦' : '👑 YENİ FOTOĞRAF TAŞIYICISI');
+  text('#takeover-name', a.title); text('#takeover-detail', a.sub); text('#takeover-cta', a.cta || '');
   const img = $('#takeover-photo'); if (state.portraitUrl && img.getAttribute('src') !== state.portraitUrl) img.src = state.portraitUrl;
   root.classList.remove('show'); void root.offsetWidth; root.classList.add('show');
-  setTimeout(() => { root.classList.remove('show'); setTimeout(nextAlert, 500); }, 4600);
+  setTimeout(() => { root.classList.remove('show'); setTimeout(nextAlert, 500); }, memorial ? 6200 : 4600);
 }
 function floatUp(symbol) {
   const lane = $('#float-lane'); if (lane.childElementCount > 14) return;
@@ -229,6 +232,18 @@ function showState(next) {
   firstState = false;
 }
 
+// ——— Memorial moment: a quiet tribute card every few minutes when the stage is calm ———
+const memorialLines = ['Rüyası bitti, hikâyesi bizde yaşıyor', 'Her yanan mum, ona bir dua', 'Unutulmayanlar asla gitmez', 'Son yolculuğunda yalnız değil'];
+let memorialIndex = 0;
+function memorialMoment() {
+  if (!overlay && !previewOn && !qs.has('memorial')) return;
+  if (alertBusy || alertQueue.length) return;
+  queueAlert({ kind: 'memorial', title: 'Eşref Tek', sub: memorialLines[memorialIndex++ % memorialLines.length], cta: '🕯️ Beğen, onun için bir mum yak' });
+  audio.play('milestone');
+}
+setTimeout(memorialMoment, Number(qs.get('memorialFirst') || 30000));
+setInterval(memorialMoment, 150000);
+
 // ——— Rotating call-to-action ———
 let ctaIndex = 0;
 function rotateCta() {
@@ -314,6 +329,11 @@ async function boot() {
     const THREE = await import('/vendor/three.module.js').catch(() => import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js'));
     const { createScene } = await import('./scene3d.js');
     stage = createScene(canvas, labels, THREE);
+    if (!qs.has('nobloom')) {
+      Promise.all(['postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/UnrealBloomPass.js', 'postprocessing/OutputPass.js'].map(f => import(`/vendor/addons/${f}`)))
+        .then(mods => stage.enableBloom(Object.assign({}, ...mods)))
+        .catch(err => console.warn('Bloom açılamadı, sahne ışıltısız devam ediyor:', err));
+    }
     text('#render-status', '3D sinematik sahne aktif');
   } catch (err) {
     console.warn('WebGL / 3D motoru açılamadı, 2.5D yedek sahne açıldı:', err);

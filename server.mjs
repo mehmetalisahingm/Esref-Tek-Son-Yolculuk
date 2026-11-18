@@ -402,6 +402,11 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') return respond(res, 405, { error: 'Yöntem desteklenmiyor' });
     // Three.js is served locally from node_modules so the stream does not depend on a CDN.
+    if (url.pathname.startsWith('/vendor/addons/')) {
+      const name = url.pathname.slice('/vendor/addons/'.length);
+      if (!/^(postprocessing|shaders)\/[A-Za-z0-9]+\.js$/.test(name)) return respond(res, 403, { error: 'İzin verilmedi' });
+      return sendFile(req, res, path.join(DIR, 'node_modules', 'three', 'examples', 'jsm', name), 'public, max-age=86400');
+    }
     if (url.pathname.startsWith('/vendor/')) {
       const name = url.pathname.slice('/vendor/'.length);
       if (!/^[a-z0-9.]+\.js$/i.test(name)) return respond(res, 403, { error: 'İzin verilmedi' });

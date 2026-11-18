@@ -10,7 +10,7 @@ export function createScene(canvas, labelsRoot, T) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.toneMapping = T.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.32;
   renderer.outputColorSpace = T.SRGBColorSpace;
   const scene = new T.Scene();
   const fogColor = new T.Color(0x1d2733);
@@ -225,17 +225,18 @@ export function createScene(canvas, labelsRoot, T) {
   const FRAME_Y = 2.55, FW = .9, FH = 1.16;
   {
     const pole = new T.Mesh(new T.CylinderGeometry(.035, .035, .9, 8), M.pole); pole.position.set(0, 1.62, .05); portraitRig.add(pole);
-    const outer = new T.Mesh(new T.BoxGeometry(FW + .16, FH + .16, .09), M.gold); outer.position.set(0, FRAME_Y, 0); portraitRig.add(outer);
+    const outer = new T.Mesh(new T.BoxGeometry(FW + .2, FH + .2, .1), M.gold); outer.position.set(0, FRAME_Y, 0); portraitRig.add(outer);
     const back = new T.Mesh(new T.BoxGeometry(FW, FH, .1), M.frameBack); back.position.set(0, FRAME_Y, .01); portraitRig.add(back);
-    // Black mourning ribbon across the top-right corner.
-    const ribbon = new T.Mesh(new T.BoxGeometry(.13, .62, .02), M.black); ribbon.position.set(FW / 2 - .1, FRAME_Y + FH / 2 - .1, .07); ribbon.rotation.z = Math.PI / 4; portraitRig.add(ribbon);
     portraitRig.traverse(o => { if (o.isMesh) o.castShadow = true; });
   }
   const signOverlay = document.createElement('div'); signOverlay.className = 'portrait-world';
   const photoEl = document.createElement('img'); photoEl.alt = ''; photoEl.decoding = 'async'; photoEl.referrerPolicy = 'no-referrer';
   const monogram = document.createElement('b'); monogram.className = 'portrait-monogram'; monogram.textContent = 'ET';
   const signName = document.createElement('span'); signName.textContent = 'EŞREF TEK';
-  signOverlay.append(monogram, photoEl, signName); labelsRoot.append(signOverlay);
+  const ribbonEl = document.createElement('i'); ribbonEl.className = 'ribbon';
+  const sheen = document.createElement('i'); sheen.className = 'sheen';
+  const corners = document.createElement('i'); corners.className = 'corners';
+  signOverlay.append(monogram, photoEl, sheen, corners, ribbonEl, signName); labelsRoot.append(signOverlay);
   photoEl.addEventListener('load', () => signOverlay.classList.add('has-photo'));
   photoEl.addEventListener('error', () => signOverlay.classList.remove('has-photo'));
   let currentPortraitUrl = '';
@@ -470,10 +471,23 @@ export function createScene(canvas, labelsRoot, T) {
     }
   }
 
+  let composer = null, bloomPass = null;
   function resize() {
     const width = canvas.clientWidth || 540, height = canvas.clientHeight || 960;
     renderer.setSize(width, height, false);
     camera.aspect = width / height; camera.updateProjectionMatrix();
+    composer?.setSize(width, height);
+  }
+  // Optional bloom: lanterns, candles, gold trim and sparks glow softly.
+  function enableBloom({ EffectComposer, RenderPass, UnrealBloomPass, OutputPass }) {
+    const width = canvas.clientWidth || 540, height = canvas.clientHeight || 960;
+    composer = new EffectComposer(renderer);
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.addPass(new RenderPass(scene, camera));
+    bloomPass = new UnrealBloomPass(new T.Vector2(width, height), .42, .55, .9);
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
+    composer.setSize(width, height);
   }
   new ResizeObserver(resize).observe(canvas); resize();
 
@@ -526,7 +540,7 @@ export function createScene(canvas, labelsRoot, T) {
     if (bearerRig) portraitRig.position.x = bearerRig.group.position.x;
     // Beam
     beamBoost = Math.max(0, beamBoost - dt * .45);
-    beam.material.opacity = (activeState.portraitBearer ? .045 : .015) + beamBoost * .07 + Math.sin(elapsed * 1.3) * .008;
+    beam.material.opacity = beamBoost * .09; beam.visible = beamBoost > .01;
     portraitSpot.intensity = 45 + beamBoost * 45;
     // Petals: gentle ambient fall plus bursts
     petalTimer += dt; while (petalTimer > .35) { petalTimer -= .35; spawnPetal((Math.random() - .5) * 9, 8, -6 + Math.random() * 14, false); }
@@ -564,7 +578,8 @@ export function createScene(canvas, labelsRoot, T) {
     camPos.lerp(goal.pos, Math.min(1, dt * (cameraMode < 3 ? 1.6 : .9)));
     camLook.lerp(goal.look, Math.min(1, dt * 1.6));
     camera.position.copy(camPos); camera.lookAt(camLook);
-    renderer.render(scene, camera);
+    if (bloomPass) bloomPass.strength = .42 + beamBoost * .35;
+    if (composer) composer.render(); else renderer.render(scene, camera);
     if (frameNo % 2 === 0) showLabels();
   }
   requestAnimationFrame(frame);
@@ -572,5 +587,6 @@ export function createScene(canvas, labelsRoot, T) {
     update: syncPeople,
     camera: mode => { cameraMode = ((mode % 4) + 4) % 4; },
     fx,
+    enableBloom,
   };
 }
