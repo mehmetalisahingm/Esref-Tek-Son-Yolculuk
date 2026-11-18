@@ -1,0 +1,12 @@
+{
+  "name": "esref-tek-son-yolculuk-live",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TikTok LIVE funeral procession web game: 6 pallbearers, one premium portrait bearer and a follower crowd",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {"node": ">=20"}
+}
