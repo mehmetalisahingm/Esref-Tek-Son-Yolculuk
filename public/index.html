@@ -3,62 +3,143 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#101714" />
+  <meta name="theme-color" content="#0a0f12" />
   <meta name="description" content="Eşref Tek Son Yolculuk — TikTok LIVE interaktif cenaze korteji." />
   <title>Eşref Tek | Son Yolculuk — TikTok LIVE</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1714'/%3E%3Cpath d='M32 10l5 15h15l-12 9 5 16-13-10-13 10 5-16-12-9h15z' fill='%23d9b56b'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@500;600;700;800&display=swap" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <div class="ambient-glow a"></div><div class="ambient-glow b"></div>
   <main class="shell">
     <header class="topbar">
       <a class="brand" href="/" aria-label="Son Yolculuk ana sayfa"><span class="brand-mark">✦</span><span><strong>SON YOLCULUK</strong><small>INTERACTIVE LIVE EXPERIENCE</small></span></a>
-      <div class="toplinks"><span class="tiny-live-dot"></span><span>YAYINA HAZIR</span><span class="top-divider"></span><span class="version">V1.1</span></div>
+      <div class="toplinks"><span class="tiny-live-dot"></span><span id="top-status">YAYINA HAZIR</span><span class="top-divider"></span><span class="version">V2.0</span></div>
     </header>
     <section class="layout">
       <div class="scene-column">
         <div class="game-frame" id="game-frame">
-          <canvas id="scene" aria-label="Eşref Tek için ön tarafta fotoğraf taşıyan tek kişi, altı tabut taşıyıcısı ve arkadan yürüyen izleyicilerin olduğu animasyonlu cenaze korteji"></canvas>
+          <canvas id="scene" aria-label="Eşref Tek için önde fotoğraf taşıyan bir kişi, altı tabut taşıyıcısı ve arkadan yürüyen izleyicilerin olduğu animasyonlu cenaze korteji"></canvas>
           <div class="scene-vignette"></div>
+          <div class="letterbox top"></div><div class="letterbox bottom"></div>
           <div id="labels" class="world-labels" aria-hidden="true"></div>
-          <div class="stage-top">
-            <div class="broadcast-row"><span class="broadcast-badge" id="broadcast-status"><span class="status-dot"></span> DEMO YAYINI</span><span class="viewer-count"><span class="eye-icon">◉</span><span id="audience-top">26</span> KİŞİ</span></div>
-            <div class="title-group"><span class="eyebrow"><span class="ornament"></span> BİR VEDA HİKÂYESİ <span class="ornament"></span></span><h1>SON <em>YOLCULUK</em></h1><div class="title-sub">E Ş R E F&nbsp;&nbsp; T E K</div><div class="gold-rule"></div></div>
-          </div>
-          <div class="toast" id="toast" role="status" aria-live="polite"></div>
-          <div class="stage-bottom">
-            <div class="stage-stat"><span class="silhouette">♙</span><strong id="procession-count">26</strong><span>kortejde</span><span class="stat-dot">·</span><span>6 taşıyıcı + 1 fotoğraf</span></div>
-            <div class="portrait-leader">
-              <div class="portrait-thumb"><img id="portrait-thumb" src="https://image.kanald.com.tr/i/kanald/100/200x286/6864d72ccf62483f9cfa5def.jpg" alt="Eşref Tek karakter fotoğrafı"></div>
-              <div class="portrait-leader-copy"><span>👑 EN ÖNDEKİ FOTOĞRAF TAŞIYICISI</span><strong id="portrait-holder">@efsane.dostu</strong><small id="portrait-requirement">500 hediye puanı ile açılır</small></div>
+
+          <div class="hud-top">
+            <div class="broadcast-row">
+              <span class="broadcast-badge" id="broadcast-status"><span class="status-dot"></span><span id="broadcast-text">DEMO</span></span>
+              <div class="counters">
+                <span class="counter" title="İzleyici"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.2 1.5 12c1.2 2.8 5 7 10.5 7s9.3-4.2 10.5-7C21.3 9.2 17.5 5 12 5zm0 11a4 4 0 110-8 4 4 0 010 8z"/></svg><b id="viewer-count">0</b></span>
+                <span class="counter candle-counter" title="Yanan mum (beğeni)"><span class="mini-flame"></span><b id="like-count">0</b></span>
+              </div>
             </div>
-            <div class="carriers-heading"><span class="heading-line"></span><span>✦ &nbsp; TABUTU TAŞIYANLAR &nbsp; ✦</span><span class="heading-line"></span></div>
+            <div class="title-group">
+              <span class="eyebrow"><span class="ornament"></span>BİR VEDA HİKÂYESİ<span class="ornament"></span></span>
+              <h1><span class="shimmer">SON YOLCULUK</span></h1>
+              <div class="title-sub">EŞREF&nbsp;TEK</div>
+            </div>
+          </div>
+
+          <div class="alert-lane" id="alerts" aria-live="polite"></div>
+          <div class="join-feed" id="join-feed" aria-hidden="true"></div>
+          <div class="float-lane" id="float-lane" aria-hidden="true"></div>
+
+          <div class="takeover" id="takeover" aria-live="assertive">
+            <div class="rays"></div>
+            <div class="takeover-card">
+              <span class="takeover-kicker">👑 YENİ FOTOĞRAF TAŞIYICISI</span>
+              <div class="takeover-photo"><b class="portrait-monogram">ET</b><img id="takeover-photo" alt="" referrerpolicy="no-referrer"></div>
+              <strong id="takeover-name">@isim</strong>
+              <span id="takeover-detail">Eşref Tek'in fotoğrafı artık onun ellerinde</span>
+            </div>
+          </div>
+
+          <div class="hud-bottom">
+            <div class="throne-card" id="throne-card">
+              <div class="throne-photo"><b class="portrait-monogram">ET</b><img id="portrait-thumb" alt="" referrerpolicy="no-referrer"></div>
+              <div class="throne-copy">
+                <span class="throne-kicker">👑 FOTOĞRAFI TAŞIYAN</span>
+                <strong id="portrait-holder">@efsane.dostu</strong>
+                <div class="progress"><span id="challenge-bar"></span></div>
+                <small id="challenge-text">500 puan ile açılır</small>
+              </div>
+              <div class="throne-points"><b id="holder-points">0</b><small>puan</small></div>
+            </div>
+            <div class="leader-row" id="leaderboard"></div>
+            <div class="carriers-heading"><span class="heading-line"></span><span>✦ TABUTU OMUZLAYANLAR ✦</span><span class="heading-line"></span></div>
             <div class="carriers-grid" id="carriers-grid"></div>
-            <div class="action-prompt"><span class="prompt-icon">💬</span><span>Yorum → <b>kortej</b></span><span class="prompt-line"></span><span class="prompt-icon">🎁</span><span>Hediye → <b>tabut</b></span><span class="prompt-line"></span><span class="prompt-icon">👑</span><span><b id="portrait-cta">500+</b> → fotoğraf</span></div>
-            <div class="footer-script">Her isim, bu yolculuğun bir parçası.</div>
+            <div class="cta" id="cta"><span id="cta-text">🎁 Hediye gönder → tabutu omuzla</span></div>
+          </div>
+
+          <button class="sound-gate" id="sound-gate" type="button" hidden>🔊 Sesi başlat</button>
+        </div>
+        <div class="scene-under">
+          <div><span class="blink-circle"></span><span id="render-status">3D sahne hazırlanıyor</span></div>
+          <div class="camera-buttons" id="camera-buttons" role="group" aria-label="Kamera açısı">
+            <button data-cam="3" class="active">Sinematik</button><button data-cam="0">Klasik</button><button data-cam="1">Yandan</button><button data-cam="2">Alçak</button>
           </div>
         </div>
-        <div class="scene-under"><div><span class="blink-circle"></span><span id="render-status">3D sahne hazırlanıyor</span></div><button class="text-button" id="camera-btn">◫ &nbsp; Kamerayı değiştir</button></div>
       </div>
+
       <aside class="sidebar" id="sidebar">
-        <div class="panel-title"><div><span class="section-overline">YAYIN YÖNETİMİ</span><h2>Kontrol Merkezi<span class="title-point">.</span></h2><p>Canlı yayını yönet, izleyicileri sahneye al.</p></div><span class="live-icon">◈</span></div>
-        <div class="stats-row"><div class="stat-card"><span>TOPLAM KATILIMCI</span><strong id="stats-audience">26</strong><small>Kortejdekiler</small></div><div class="stat-card"><span>AKTİF TAŞIYICI</span><strong id="stats-carriers">6 <small>/ 6</small></strong><small>Hediye gönderenler</small></div><div class="stat-card"><span>GELEN HEDİYE</span><strong id="stats-gifts">0</strong><small>Toplam adet</small></div></div>
-        <div class="panel"><div class="panel-heading"><div class="panel-icon green">◉</div><div><h3>TikTok LIVE Bağlantısı</h3><p>Gerçek yorum ve hediyeleri dinle</p></div><span id="connection-pip" class="connection-pip">DEMO</span></div><label class="input-label" for="tiktok-user">TIKTOK KULLANICI ADI</label><div class="input-with-prefix"><span>@</span><input id="tiktok-user" type="text" autocomplete="off" placeholder="kullaniciadi" maxlength="26"></div><button id="connect-btn" class="button-primary">◉ &nbsp; Yayına Bağlan</button><div class="connection-hint" id="connection-hint">Şu anda demo modu açık. Gerçek yayın için paket kurulumu gerekli.</div></div>
-        <div class="panel"><div class="panel-heading"><div class="panel-icon gold">✧</div><div><h3>Canlı Etkileşim Testi</h3><p>Yayın açmadan oyunu dene</p></div></div><label class="input-label" for="viewer-name">İZLEYİCİ KULLANICI ADI</label><div class="input-with-prefix"><span>@</span><input id="viewer-name" type="text" autocomplete="off" placeholder="ornek_izleyici" maxlength="26"></div><div class="test-buttons"><button id="chat-btn" class="button-secondary">💬 &nbsp; Yorum Gönder</button><button id="gift-btn" class="button-gold">🎁 &nbsp; Hediye Gönder</button></div><div class="test-buttons" style="margin-top:8px"><button id="portrait-test-btn" class="button-gold special-gift">👑 &nbsp; Fotoğraf için büyük hediye gönder</button></div><div class="test-subtext">Hediye gönderenlerden en son 6 farklı kişi tabutu taşır. Diğer herkes arkadaki kortejde yürür.</div><div class="quick-actions"><button id="demo-chat-btn" class="small-button">+ 10 izleyici</button><button id="demo-gift-btn" class="small-button">+ Rastgele hediye</button><button id="reset-btn" class="small-button danger">↻ Sıfırla</button></div></div>
-        <div class="panel"><div class="panel-heading"><div class="panel-icon gold">👑</div><div><h3>Özel Fotoğraf Taşıyıcısı</h3><p>Tek kişi; 6 tabut taşıyıcısından ayrı</p></div></div>
-          <label class="input-label" for="portrait-cost">GEREKLİ HEDİYE PUANI (TOKEN EŞİĞİ)</label>
-          <div class="setting-inline"><input id="portrait-cost" type="number" min="10" max="100000" step="10" value="500"><button id="save-cost-btn" class="button-gold">Eşiği Kaydet</button></div>
-          <p class="setting-note">Puanlar mevcut yayında biriken hediyelerin TikTok tarafından bildirilen değerlerinden hesaplanır. En fazla puanı biriktiren, eşik üstündeki izleyici önde fotoğrafı taşır.</p>
-          <label class="input-label" for="portrait-upload">EŞREF TEK FOTOĞRAFI (İSTEĞE BAĞLI DEĞİŞTİR)</label>
-          <input id="portrait-upload" type="file" accept="image/jpeg,image/png,image/webp" class="upload-input">
-          <p class="setting-note">Varsayılan: Kanal D karakter portresi (internet gerekir). İstersen kendi görselini yükle (en fazla 2 MB); sunucudaki klasöre kaydedilir.</p>
+        <div class="panel-title"><div><span class="section-overline">YAYIN YÖNETİMİ</span><h2>Kontrol Merkezi<span class="title-point">.</span></h2><p>Canlı yayını yönet, izleyicileri sahneye al.</p></div></div>
+        <div class="stats-row">
+          <div class="stat-card"><span>KORTEJ</span><strong id="stats-audience">0</strong><small>kişi</small></div>
+          <div class="stat-card"><span>TAŞIYICI</span><strong id="stats-carriers">0 / 6</strong><small>omuz</small></div>
+          <div class="stat-card"><span>HEDİYE</span><strong id="stats-gifts">0</strong><small id="stats-points">0 puan</small></div>
+          <div class="stat-card"><span>MUM</span><strong id="stats-likes">0</strong><small>beğeni</small></div>
         </div>
+
+        <div class="panel"><div class="panel-heading"><div class="panel-icon green">◉</div><div><h3>TikTok LIVE Bağlantısı</h3><p>Gerçek yorum, beğeni ve hediyeleri dinle</p></div><span id="connection-pip" class="connection-pip">DEMO</span></div>
+          <label class="input-label" for="tiktok-user">TIKTOK KULLANICI ADI</label>
+          <div class="input-with-prefix"><span>@</span><input id="tiktok-user" type="text" autocomplete="off" placeholder="kullaniciadi" maxlength="26"></div>
+          <div class="button-row"><button id="connect-btn" class="button-primary">◉ Yayına Bağlan</button><button id="disconnect-btn" class="button-secondary" disabled>Bağlantıyı kes</button></div>
+          <div class="connection-hint" id="connection-hint">Şu anda demo modu açık.</div>
+        </div>
+
+        <div class="panel"><div class="panel-heading"><div class="panel-icon gold">✧</div><div><h3>Canlı Etkileşim Testi</h3><p>Yayın açmadan her şeyi dene</p></div></div>
+          <div class="two-col">
+            <div><label class="input-label" for="viewer-name">İZLEYİCİ</label><div class="input-with-prefix"><span>@</span><input id="viewer-name" type="text" autocomplete="off" placeholder="ornek_izleyici" maxlength="26"></div></div>
+            <div><label class="input-label" for="viewer-comment">YORUM</label><input id="viewer-comment" class="plain-input" type="text" autocomplete="off" placeholder="Başın sağ olsun 🖤" maxlength="80"></div>
+          </div>
+          <div class="test-buttons four">
+            <button id="chat-btn" class="button-secondary">💬 Yorum</button>
+            <button id="like-btn" class="button-secondary">🕯️ Beğeni</button>
+            <button id="follow-btn" class="button-secondary">💗 Takip</button>
+            <button id="gift-btn" class="button-gold">🎁 Gül</button>
+          </div>
+          <div class="test-buttons"><button id="portrait-test-btn" class="button-gold special-gift">👑 Fotoğrafı kapacak büyük hediye</button></div>
+          <div class="quick-actions"><button id="demo-chat-btn" class="small-button">+10 izleyici</button><button id="demo-gift-btn" class="small-button">+ Rastgele hediye</button><button id="demo-btn" class="small-button">Demo sahnesi</button><button id="reset-btn" class="small-button danger">Temizle</button></div>
+        </div>
+
+        <div class="panel"><div class="panel-heading"><div class="panel-icon gold">♫</div><div><h3>Müzik ve Ses</h3><p>Yayın ekranında (overlay) çalar</p></div></div>
+          <div class="toggle-row">
+            <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Cenaze Marşı</label>
+            <label class="switch"><input type="checkbox" id="sfx-toggle" checked><span></span>Efektler</label>
+            <label class="switch"><input type="checkbox" id="preview-toggle"><span></span>Bu sekmede de dinle</label>
+          </div>
+          <label class="input-label" for="volume">SES SEVİYESİ <b id="volume-value">65%</b></label>
+          <input id="volume" type="range" min="0" max="100" value="65" class="range">
+          <p class="setting-note">Müzik, Chopin'in Cenaze Marşı'nın (1839, kamu malı) tarayıcıda canlı sentezlenmiş hâlidir; kayıt kullanılmaz, bu yüzden TikTok'un telif filtresine takılmaz. Overlay ile bu sekme aynı anda çalarsa ses iki kez duyulur; önizlemeyi sadece test için aç.</p>
+        </div>
+
+        <div class="panel"><div class="panel-heading"><div class="panel-icon gold">👑</div><div><h3>Fotoğraf Taşıyıcısı</h3><p>Tek kişi; 6 tabut taşıyıcısından ayrı</p></div></div>
+          <label class="input-label" for="portrait-cost">GEREKLİ HEDİYE PUANI</label>
+          <div class="setting-inline"><input id="portrait-cost" type="number" min="10" max="100000" step="10" value="500"><button id="save-cost-btn" class="button-gold">Eşiği Kaydet</button></div>
+          <p class="setting-note">Puan = TikTok'un bildirdiği elmas değeri × adet. Eşiği aşan ve en çok puanı olan izleyici fotoğrafı taşır; biri onu geçerse yerini alır.</p>
+          <label class="input-label" for="portrait-upload">EŞREF TEK FOTOĞRAFI</label>
+          <div class="setting-inline"><input id="portrait-upload" type="file" accept="image/jpeg,image/png,image/webp" class="upload-input"><button id="portrait-default-btn" class="small-button">Varsayılan</button></div>
+          <p class="setting-note">Varsayılan görsel Kanal D karakter sayfasından yüklenir (internet gerekir, hakları sahibine aittir). Kendi görselini yüklersen yerel olarak saklanır.</p>
+        </div>
+
         <div class="panel activity-panel"><div class="panel-heading"><div class="panel-icon neutral">▤</div><div><h3>Son Hareketler</h3><p>Canlı olarak güncellenir</p></div><span class="activity-indicator"></span></div><div id="activity" class="activity"></div></div>
-        <div class="panel help-panel"><span class="help-icon">ⓘ</span><div><strong>OBS / TikTok Live Studio</strong><p>Tarayıcı kaynağına <code>http://localhost:3000/?overlay=1</code> ekle. 540 × 960 dikey yayın için uygundur.</p></div></div>
+        <div class="panel help-panel"><span class="help-icon">ⓘ</span><div><strong>OBS / TikTok LIVE Studio</strong><p>Tarayıcı kaynağı: <code id="overlay-url">http://localhost:3000/?overlay=1</code> · 540 × 960 (veya 1080 × 1920). Alt kısmı TikTok yorumları kapatıyorsa <code>&amp;compact=1</code> ekle.</p><button id="copy-overlay" class="small-button">Adresi kopyala</button></div></div>
       </aside>
     </section>
-    <footer class="site-footer"><span>✦ &nbsp; SON YOLCULUK — Özgün, temsili bir fan oyunu</span><span>Made for interactive livestreams · 2026</span></footer>
+    <footer class="site-footer"><span>✦ SON YOLCULUK — Özgün, temsili bir fan oyunu</span><span>Made for interactive livestreams · 2026</span></footer>
   </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="/app.js"></script>
 </body>
 </html>

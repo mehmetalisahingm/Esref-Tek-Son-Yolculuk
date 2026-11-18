@@ -1,7 +1,7 @@
 # Katkıda bulunma
 
 1. `main` üzerinden kendi feature branch'ini oluştur.
-2. `npm test` çalıştır; 9 temel testin geçtiğinden emin ol.
+2. `npm test` çalıştır; 14 testin geçtiğinden emin ol.
 3. Değişikliklerini açıklayan Pull Request aç.
 4. Yerelde oyun: `node server.mjs`, overlay: `http://localhost:3000/?overlay=1`.
 

@@ -57,7 +57,7 @@ test('reset clears the procession and demo restores six carriers',async()=>{
   assert.equal(now.carriers.filter(Boolean).length,6);
 });
 test('web app HTML and graphics are served',async()=>{
-  for(const path of ['/','/style.css','/app.js','/scene3d.js','/fallback.js','/?overlay=1']) {
+  for(const path of ['/','/style.css','/app.js','/audio.js','/scene3d.js','/fallback.js','/?overlay=1','/vendor/three.module.js']) {
     const r=await fetch(base+path);assert.equal(r.status,200,`failed ${path}`);
   }
 });
@@ -94,5 +94,53 @@ test('raising the threshold vacates portrait role, lowering it selects highest p
   assert.equal((await getState()).portraitBearer,null);
   await post('settings',{portraitCost:500});
   assert.equal((await getState()).portraitBearer.id,'vip2');
+  await post('demo');
+});
+
+test('comments are stored for in-scene speech bubbles and do not duplicate viewers',async()=>{
+  await post('chat',{name:'yorumcu',id:'commenter',comment:'Başın sağ olsun <b>Eşref</b>'});
+  let s=await getState();
+  const p=s.people.find(x=>x.id==='commenter');
+  assert.ok(p.comment.includes('Başın sağ olsun'));
+  assert.ok(!p.comment.includes('<'));
+  const n=s.people.length;
+  await post('chat',{name:'yorumcu',id:'commenter',comment:'ikinci yorum'});
+  s=await getState();
+  assert.equal(s.people.length,n);
+  assert.equal(s.people.find(x=>x.id==='commenter').comment,'ikinci yorum');
+});
+
+test('likes light candles, count per person and add the liker to the procession',async()=>{
+  const before=(await getState()).likes;
+  await post('like',{name:'mumcu',id:'liker',count:25});
+  await post('like',{name:'mumcu',id:'liker',count:5});
+  const s=await getState();
+  assert.equal(s.likes,before+30);
+  assert.equal(s.people.find(p=>p.id==='liker').likes,30);
+});
+
+test('leaderboard ranks gifters by points',async()=>{
+  await post('reset');
+  await post('gift',{name:'a',id:'lb-a',amount:1,unitPoints:5});
+  await post('gift',{name:'b',id:'lb-b',amount:2,unitPoints:20});
+  const s=await getState();
+  assert.deepEqual(s.leaderboard.map(p=>p.id),['lb-b','lb-a']);
+  assert.equal(s.leaderboard[0].giftPoints,40);
+});
+
+test('audio settings are validated and shared through state',async()=>{
+  await post('audio',{music:false,volume:.4});
+  let s=await getState();
+  assert.equal(s.audio.music,false);assert.equal(s.audio.volume,.4);
+  const bad=await fetch(base+'/api/audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume:3})});
+  assert.equal(bad.status,400);
+  await post('audio',{music:true,volume:.65});
+});
+
+test('static files cannot escape the public folder',async()=>{
+  const r=await fetch(base+'/%2e%2e/server.mjs');
+  assert.notEqual(r.status,200);
+  const v=await fetch(base+'/vendor/..%2fpackage.json');
+  assert.notEqual(v.status,200);
   await post('demo');
 });
