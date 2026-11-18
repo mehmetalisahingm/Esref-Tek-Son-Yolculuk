@@ -4,7 +4,7 @@ export function createFallback(canvas,labelsRoot){
   const ctx=canvas.getContext('2d');
   let state={carriers:Array(6).fill(null),people:[],portraitBearer:null},t=0,view=0;
   const portrait=new Image();let portraitLoaded=false,portraitUrl='';
-  portrait.onload=()=>portraitLoaded=true;portrait.onerror=()=>portraitLoaded=false;
+  portrait.referrerPolicy='no-referrer';portrait.onload=()=>portraitLoaded=true;portrait.onerror=()=>portraitLoaded=false;
   let dpr=1,w=430,h=764;
   const rand=(n)=>{let v=Math.sin(n*19.619+16.33)*43758.5453;return v-Math.floor(v)};
   function resize(){const rect=canvas.getBoundingClientRect();w=rect.width||430;h=rect.height||764;dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
@@ -73,7 +73,7 @@ export function createFallback(canvas,labelsRoot){
     ellipse({x:X,y:Y-99*s},15*s,19*s,['#c39370','#dbb490','#b6805f'][n%3]);
     poly([{x:X-14*s,y:Y-104*s},{x:X-14*s,y:Y-117*s},{x:X+13*s,y:Y-118*s},{x:X+15*s,y:Y-103*s},{x:X+5*s,y:Y-111*s},{x:X-7*s,y:Y-109*s}],'#1c211f');
     if(empty)ctx.globalAlpha=.6;
-    if(name && (carrier||z>-8)){
+    if(name && (carrier||z>-4.2)){
       ctx.font=`700 ${Math.max(9,12*s)}px system-ui,sans-serif`;ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#142019';ctx.fillStyle=carrier?'#ffe0a0':'#e5eadc';
       const label='@'+String(name).slice(0,15);ctx.strokeText(label,X,Y-127*s);ctx.fillText(label,X,Y-127*s);
     }
@@ -95,23 +95,23 @@ export function createFallback(canvas,labelsRoot){
   function frontPortrait(){
     // The single holder walks *ahead* of the coffin and raises the framed photo.
     const p=state.portraitBearer;
-    human(0,3.35,p?.id||'portrait-empty',null,false,!p);
-    const mid=point(0,2.92,3.35),sc=mid.scale*(w/430);
+    human(0,4.6,p?.id||'portrait-empty',null,false,!p);
+    const mid=point(0,2.25,4.6),sc=mid.scale*(w/430)*.72;
     const bob=Math.sin(t*6)*2*sc;
     const bw=94*sc,bh=128*sc;
     const X=mid.x,Y=mid.y+bob;
-    line(point(0,2.1,3.35),point(0,2.4,3.35),'#826038',8*sc);
+    line(point(0,1.5,4.6),point(0,1.8,4.6),'#826038',8*sc);
     ctx.fillStyle='#654927';ctx.fillRect(X-bw/2-6*sc,Y-bh/2-6*sc,bw+12*sc,bh+12*sc);
     ctx.fillStyle='#f1c87a';ctx.fillRect(X-bw/2-3*sc,Y-bh/2-3*sc,bw+6*sc,bh+6*sc);
     ctx.fillStyle='#151d1a';ctx.fillRect(X-bw/2,Y-bh/2,bw,bh);
-    if(portraitLoaded)ctx.drawImage(portrait,X-bw/2+3*sc,Y-bh/2+3*sc,bw-6*sc,bh-27*sc);
+    if(portraitLoaded){const iw=portrait.naturalWidth,ih=portrait.naturalHeight,tw=bw-6*sc,th=bh-27*sc,r=Math.max(tw/iw,th/ih),sw=tw/r,sh=th/r;ctx.drawImage(portrait,(iw-sw)/2,(ih-sh)*.15,sw,sh,X-bw/2+3*sc,Y-bh/2+3*sc,tw,th);}
     else{ctx.textAlign='center';ctx.fillStyle='#f3e0b3';ctx.font=`${Math.max(9,12*sc)}px Georgia,serif`;ctx.fillText('EŞREF TEK',X,Y-5*sc)}
     ctx.fillStyle='#0e1f19';ctx.fillRect(X-bw/2,Y+bh/2-24*sc,bw,24*sc);
     ctx.fillStyle='#f7d99a';ctx.textAlign='center';ctx.font=`bold ${Math.max(9,13*sc)}px Georgia,serif`;
     ctx.fillText('EŞREF TEK',X,Y+bh/2-8*sc);
     ctx.font=`700 ${Math.max(8,11*sc)}px system-ui,sans-serif`;
     ctx.fillStyle='#ffdea1';
-    ctx.fillText(p?`@${p.name}`:'VIP BEKLENİYOR',X,Y-bh/2-12*sc);
+    ctx.font=`800 ${Math.max(10,15*sc)}px system-ui,sans-serif`;ctx.lineWidth=4;ctx.strokeStyle='#120d05';const crown=p?`👑 @${p.name}`:'👑 Bu yer seni bekliyor';ctx.strokeText(crown,X,Y-bh/2-14*sc);ctx.fillText(crown,X,Y-bh/2-14*sc);
   }
   function render(){
     requestAnimationFrame(render);t+=Math.min(.033,1/60);
