@@ -418,7 +418,7 @@ const server = http.createServer(async (req, res) => {
         case '/api/music': {
           const slot = body.slot === undefined ? 1 : Number(body.slot);
           if (!Number.isInteger(slot) || slot < 1 || slot > 3) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
-          const match = /^data:[\\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+          const match = /^data:[\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
           if (!match) return respond(res, 400, { error: 'Şarkı dosyası okunamadı' });
           const data = Buffer.from(match[1], 'base64');
           if (!data.length || data.length > MAX_MUSIC_BYTES) return respond(res, 400, { error: 'Şarkı en fazla 15 MB olabilir' });
@@ -427,7 +427,7 @@ const server = http.createServer(async (req, res) => {
           const stem = slot === 1 ? 'music-custom' : `music-custom-${slot}`;
           await fs.writeFile(path.join(PUBLIC, `${stem}.${format}`), data);
           await Promise.all(MUSIC_EXTS.filter(ext => ext !== format).map(ext => fs.unlink(path.join(PUBLIC, `${stem}.${ext}`)).catch(() => {})));
-          const name = cleanText(String(body.name || '').replace(/\\.[a-z0-9]{2,4}$/i, ''), 60) || `Şarkı ${slot}`;
+          const name = cleanText(String(body.name || '').replace(/\.[a-z0-9]{2,4}$/i, ''), 60) || `Şarkı ${slot}`;
           await fs.writeFile(path.join(PUBLIC, `${stem}.name.txt`), name);
           const url = `/${stem}.${format}?v=${Date.now()}`;
           state.musicPlaylist[slot - 1] = { url, name };
