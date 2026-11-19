@@ -269,6 +269,13 @@ function countGift(ev) {
   const identity = `${user.id}:${g.id}`;
   let delta;
   if (g.streakable) {
+    // A repeated final message must not start a new combo after the first one was cleared.
+    if (g.repeatEnd && g.msgId) {
+      const key = `${identity}:${g.msgId}`;
+      if (giftSeen.has(key)) return;
+      giftSeen.set(key, Date.now());
+      if (giftSeen.size > 1000) giftSeen = new Map([...giftSeen].slice(-500));
+    }
     // Combo gifts report a running total; count only the increase since the last update.
     const last = giftStreak.get(identity) || 0;
     delta = Math.max(0, g.repeatCount - last);

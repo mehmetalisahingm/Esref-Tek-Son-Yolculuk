@@ -96,6 +96,8 @@ test('TikFinity bridge brings comments, joins, follows, likes, gifts and viewers
   send({ event: 'like', data: { uniqueId: 'begenen', userId: 'u4', likeCount: 15 } });
   // A combo rose: running totals 1 → 3 → 5 must count as five roses, not nine.
   for (const [n, end] of [[1, false], [3, false], [5, true]]) send({ event: 'gift', data: { uniqueId: 'gulcu', userId: 'u5', giftId: 5655, giftName: 'Rose', diamondCount: 1, repeatCount: n, repeatEnd: end, giftType: 1, msgId: `r${n}` } });
+  // A duplicate final combo event must not count the whole series a second time.
+  send({ event: 'gift', data: { uniqueId: 'gulcu', userId: 'u5', giftId: 5655, giftName: 'Rose', diamondCount: 1, repeatCount: 5, repeatEnd: true, giftType: 1, msgId: 'r5' } });
   // A big non-combo gift sent twice with the same msgId must only count once.
   const lion = { event: 'gift', data: { uniqueId: 'aslan', userId: 'u6', giftId: 6369, giftName: 'Lion', diamondCount: 29999, repeatCount: 1, repeatEnd: true, giftType: 2, msgId: 'big1' } };
   send(lion); send(lion);
@@ -113,7 +115,7 @@ test('TikFinity bridge brings comments, joins, follows, likes, gifts and viewers
   assert.equal(byId('u6').giftPoints, 29999);
   assert.equal(s.gifts, 6);
   assert.equal(s.viewerCount, 1234);
-  assert.deepEqual(s.bridge.counts, { chat: 1, gift: 5, like: 15, follow: 1, share: 0, member: 1 });
+  assert.deepEqual(s.bridge.counts, { chat: 1, gift: 6, like: 15, follow: 1, share: 0, member: 1 });
   assert.ok(s.bridge.lastEventAt > 0);
 });
 
