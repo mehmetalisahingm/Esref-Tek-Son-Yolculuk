@@ -1,3 +1,5 @@
+import { playlistUrls, nextTrackIndex } from './playlist.js';
+
 // Procedural soundtrack and sound effects. No recordings are used.
 // Music: theme from Chopin's Piano Sonata No. 2, 3rd mvt. "Marche funèbre" (1839, public domain),
 // synthesised live with the Web Audio API, so the stream carries no third-party recording.
@@ -29,19 +31,58 @@ export function createAudio() {
   for (const bus of [musicBus, sfxBus]) { bus.connect(dry); bus.connect(reverb); }
   // An uploaded song plays on its own clean bus (no added reverb), still under the master volume.
   const trackBus = ctx.createGain(); trackBus.gain.value = 0; trackBus.connect(master);
-  const track = new Audio(); track.loop = true; track.preload = 'auto';
-  let trackSource = null, trackUrl = '';
-  function setTrack(url) {
-    if (url === trackUrl) return;
-    trackUrl = url;
-    if (!url) { track.pause(); track.removeAttribute('src'); track.load(); return; }
+  const track = new Audio();
+  track.loop = false; // The entire list loops, not each individual track.
+  track.preload = 'auto';
+  let trackSource = null, trackUrl = '', playlist = [], playlistIndex = 0, playlistKey = '', failures = 0;
+  function playSlot(index) {
+    if (!playlist.length) return;
+    playlistIndex = index;
+    trackUrl = playlist[index];
     if (!trackSource) { trackSource = ctx.createMediaElementSource(track); trackSource.connect(trackBus); }
-    track.src = url; track.load();
+    if (track.getAttribute('src') !== trackUrl) {
+      track.pause();
+      track.src = trackUrl;
+      track.load();
+    }
+    if (settings.enabled && settings.music && ctx.state === 'running') track.play().catch(() => {});
+  }
+  track.addEventListener('ended', () => {
+    failures = 0;
+    if (playlist.length) playSlot(nextTrackIndex(playlistIndex, playlist.length));
+  });
+  track.addEventListener('error', () => {
+    // Skip a corrupt/missing file, but do not endlessly retry when every track fails.
+    if (playlist.length && failures < playlist.length - 1) {
+      failures++;
+      playSlot(nextTrackIndex(playlistIndex, playlist.length));
+    } else {
+      console.warn('Müzik dosyaları oynatılamadı; ses dosyalarını kontrol edin.');
+      track.pause();
+    }
+  });
+  function setPlaylist(items) {
+    const urls = playlistUrls(items);
+    const key = JSON.stringify(urls);
+    if (key === playlistKey) return; // State updates must not restart the song.
+    const previous = trackUrl;
+    playlistKey = key;
+    playlist = urls;
+    failures = 0;
+    if (!playlist.length) {
+      track.pause();
+      track.removeAttribute('src');
+      track.load();
+      trackUrl = '';
+      playlistIndex = 0;
+      return;
+    }
+    playSlot(Math.max(0, playlist.indexOf(previous)));
   }
   dry.connect(master); reverb.connect(wet).connect(master);
   const noise = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; })();
 
-  let settings = { enabled: false, music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6, musicUrl: '' };
+  let settings = { enabled: false, music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6, musicUrl: '', musicPlaylist: [] };
   let musicOn = false, nextTime = 0, step = 0, timer = null, listeners = [];
   const lastPlayed = new Map();
 
@@ -104,8 +145,8 @@ export function createAudio() {
     const t = ctx.currentTime;
     const vol = settings.enabled ? settings.volume : 0;
     master.gain.cancelScheduledValues(t); master.gain.setTargetAtTime(vol, t, ramp / 4);
-    setTrack(settings.musicUrl || '');
-    const useTrack = Boolean(trackUrl);
+    setPlaylist(settings.musicPlaylist?.length ? settings.musicPlaylist : (settings.musicUrl ? [settings.musicUrl] : []));
+    const useTrack = playlist.length > 0;
     const level = settings.music ? settings.musicVolume : 0;
     musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(useTrack ? 0 : level * 1.3, t, ramp / 3);
     trackBus.gain.cancelScheduledValues(t); trackBus.gain.setTargetAtTime(useTrack ? level : 0, t, ramp / 3);
