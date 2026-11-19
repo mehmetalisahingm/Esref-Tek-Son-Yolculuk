@@ -263,6 +263,13 @@ function updateStatus(s) {
   if (showWarn) warn.textContent = b.state === 'waiting' ? '⏳ Yayın bekleniyor, açılınca bağlanacak' : ['connecting', 'reconnecting'].includes(b.state) ? '⏳ TikTok\'a bağlanılıyor…' : '⚠ TikTok bağlı değil';
   updateBridgeTimes();
 }
+function applyLayout(s) {
+  const l = s.layout || {};
+  document.body.classList.toggle('fan-note-off', l.fanNote === false);
+  document.body.classList.toggle('facecam-on', Boolean(l.facecam));
+  document.body.classList.toggle('emblem-portrait', Boolean(l.emblem));
+  for (const key of ['fanNote', 'facecam', 'emblem']) { const el = $(`#layout-${key}`); if (el && document.activeElement !== el) el.checked = key === 'fanNote' ? l.fanNote !== false : Boolean(l[key]); }
+}
 function updateAudioPanel(s) {
   for (const [id, key] of volumeSliders) {
     const v = Math.round((s.audio[key] ?? 0) * 100);
@@ -291,7 +298,7 @@ function showState(next) {
   text('#stats-gifts', fmt(next.gifts));
   text('#stats-points', `${fmt(next.giftPoints)} puan`);
   text('#stats-likes', fmt(next.likes || 0));
-  updateCarriers(next); updateLeaderboard(next); updateLikeBoard(next); updateGoal(next); updateThrone(next); updateStatus(next); updateAudioPanel(next);
+  updateCarriers(next); updateLeaderboard(next); updateLikeBoard(next); updateGoal(next); applyLayout(next); updateThrone(next); updateStatus(next); updateAudioPanel(next);
   if (!overlay) updateActivity(next);
   stage?.update(next);
   processEvents(next);
@@ -309,7 +316,7 @@ function memorialMoment() {
   audio.play('milestone');
 }
 setTimeout(memorialMoment, Number(qs.get('memorialFirst') || 30000));
-setInterval(memorialMoment, 150000);
+setInterval(memorialMoment, 300000);
 
 // ——— Rotating call-to-action ———
 let ctaIndex = 0;
@@ -405,6 +412,7 @@ for (let slot = 1; slot <= 3; slot++) {
   });
 }
 on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Varsayılan müziğe dönüldü'); });
+for (const key of ['fanNote', 'facecam', 'emblem']) $(`#layout-${key}`).addEventListener('change', wrap(() => api('layout', { [key]: $(`#layout-${key}`).checked })));
 $('#preview-toggle').addEventListener('change', () => { previewOn = $('#preview-toggle').checked; if (previewOn) unlock(); configureAudio(); });
 $('#copy-overlay').addEventListener('click', async () => { try { await navigator.clipboard.writeText(`${location.origin}/?overlay=1`); showToast('📋 Overlay adresi kopyalandı'); } catch { showToast(`${location.origin}/?overlay=1`); } });
 text('#overlay-url', `${location.origin}/?overlay=1`);

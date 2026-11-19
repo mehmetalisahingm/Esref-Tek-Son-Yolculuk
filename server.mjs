@@ -92,7 +92,7 @@ function snapshot() {
     portraitBearer: state.portraitBearer, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
     likes: state.likes, follows: state.follows, shares: state.shares, viewerCount: state.viewerCount,
-    leaderboard: leaderboard(), likeBoard: likeBoard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
+    leaderboard: leaderboard(), likeBoard: likeBoard(), layout: bridgeConfig.layout, audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
   };
 }
 // Coalesce bursts (likes on a busy stream can arrive dozens per second) into ≤ 12 pushes per second.
@@ -239,7 +239,10 @@ function originAllowed(req) {
 // ——— Live bridge settings (kept in a local, git-ignored file; the sign key never leaves this computer) ———
 const CONFIG_FILE = process.env.SON_YOLCULUK_CONFIG || path.join(DIR, 'config.local.json');
 let bridgeConfig = { mode: 'direct', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL, autoConnect: false };
+// Stream-safety layout options (kept with the bridge settings in config.local.json).
+const DEFAULT_LAYOUT = { fanNote: true, facecam: false, emblem: false };
 try { bridgeConfig = { ...bridgeConfig, ...JSON.parse(await fs.readFile(CONFIG_FILE, 'utf8')) }; } catch {}
+bridgeConfig.layout = { ...DEFAULT_LAYOUT, ...(bridgeConfig.layout || {}) };
 async function saveBridgeConfig() {
   try { await fs.writeFile(CONFIG_FILE, JSON.stringify(bridgeConfig, null, 2)); } catch (err) { console.warn('Ayar dosyası yazılamadı:', err?.message || err); }
 }
@@ -389,6 +392,11 @@ const server = http.createServer(async (req, res) => {
         case '/api/gift': { const p = gift(body.name, body.id, body.giftName || 'Gül', body.amount || 1, false, body.unitPoints ?? 1); return respond(res, 200, { ok: true, person: p }); }
         case '/api/like': { const p = like(body.name, body.id, body.count || 1, false); return respond(res, 200, { ok: true, person: p }); }
         case '/api/follow': { const p = join(body.name, body.id, 'follow'); return respond(res, 200, { ok: true, person: p }); }
+        case '/api/layout': {
+          for (const key of Object.keys(DEFAULT_LAYOUT)) if (typeof body[key] === 'boolean') bridgeConfig.layout[key] = body[key];
+          await saveBridgeConfig(); emit();
+          return respond(res, 200, { ok: true, layout: bridgeConfig.layout });
+        }
         case '/api/audio': {
           const a = state.audio;
           if (typeof body.music === 'boolean') a.music = body.music;

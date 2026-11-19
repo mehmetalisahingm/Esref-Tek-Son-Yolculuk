@@ -235,3 +235,20 @@ test('the coffin ledger lists the six biggest likers in order', async()=>{
   assert.ok(s.likeBoard.every(p=>p.carrying));
   await post('demo');
 });
+
+test('stream-safety layout options are stored and shared, unknown keys ignored', async()=>{
+  let s=await getState();
+  assert.deepEqual(s.layout,{fanNote:true,facecam:false,emblem:false});
+  await post('layout',{facecam:true,emblem:true,hacker:'x'});
+  s=await getState();
+  assert.equal(s.layout.facecam,true); assert.equal(s.layout.emblem,true); assert.equal(s.layout.hacker,undefined);
+  await post('layout',{facecam:false,emblem:false});
+});
+
+test('no third-party audio is bundled with the project', async()=>{
+  const fs=await import('node:fs');
+  assert.equal(fs.existsSync('public/music'),false);
+  const s=await getState();
+  assert.ok((s.musicPlaylist||[]).every(t=>!t.url||t.url.startsWith('/music-custom')),'varsayılan liste boş, yalnızca yüklenen dosyalar');
+});
+
