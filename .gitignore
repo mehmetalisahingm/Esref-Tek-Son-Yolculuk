@@ -3,4 +3,6 @@ node_modules/
 *.log
 .DS_Store
 public/portrait-custom.*
+public/music-custom.*
+public/music-custom-*
 *.zip

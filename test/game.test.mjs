@@ -1,5 +1,6 @@
 import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
+import { playlistUrls, nextTrackIndex } from '../public/playlist.js';
 import {spawn} from 'node:child_process';
 import {setTimeout as sleep} from 'node:timers/promises';
 const PORT=31000+Math.floor(Math.random()*500);
@@ -135,6 +136,79 @@ test('audio settings are validated and shared through state',async()=>{
   const bad=await fetch(base+'/api/audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({volume:3})});
   assert.equal(bad.status,400);
   await post('audio',{music:true,volume:.65});
+});
+
+test('an uploaded song is validated, served with byte ranges and can be removed',async()=>{
+  const fakeMp3=Buffer.concat([Buffer.from('ID3'),Buffer.alloc(64,1)]);
+  const up=await post('music',{dataUrl:'data:audio/mpeg;base64,'+fakeMp3.toString('base64'),name:'Benim Şarkım.mp3'});
+  assert.match(up.musicUrl,/^\/music-custom\.mp3/);
+  let s=await getState();
+  assert.equal(s.musicName,'Benim Şarkım');
+  const part=await fetch(base+s.musicUrl,{headers:{Range:'bytes=0-2'}});
+  assert.equal(part.status,206);
+  assert.equal(Buffer.from(await part.arrayBuffer()).toString(),'ID3');
+  const bad=await fetch(base+'/api/music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dataUrl:'data:audio/mpeg;base64,'+Buffer.from('not really audio at all').toString('base64')})});
+  assert.equal(bad.status,400);
+  await post('music-default');
+  s=await getState();
+  assert.equal(s.musicUrl,'');
+});
+
+test('ordered playlist cycles 1 -> 2 -> 3 -> 1 and skips empty slots', () => {
+  const tracks = [
+    { url: '/music-custom.mp3', name: 'Bir' },
+    { url: '', name: '' },
+    { url: '/music-custom-3.ogg?v=10', name: 'Üç' },
+  ];
+  assert.deepEqual(playlistUrls(tracks), ['/music-custom.mp3', '/music-custom-3.ogg?v=10']);
+  assert.equal(nextTrackIndex(0, 2), 1);
+  assert.equal(nextTrackIndex(1, 2), 0);
+  assert.equal(nextTrackIndex(2, 3), 0);
+  assert.equal(nextTrackIndex(0, 0), -1);
+  assert.deepEqual(playlistUrls([{ url: 'https://youtube.com/shorts/example' }]), []);
+});
+
+test('three upload slots persist as ordered state, serve audio and clear independently', async () => {
+  const audioData = Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64, 1)]).toString('base64');
+  for (let slot = 1; slot <= 3; slot++) {
+    const response = await post('music', {
+      slot, dataUrl: 'data:audio/mpeg;base64,' + audioData, name: `Kullanıcı sesi ${slot}.mp3`
+    });
+    assert.equal(response.slot, slot);
+    assert.ok(response.musicUrl.includes(slot === 1 ? 'music-custom.mp3' : `music-custom-${slot}.mp3`));
+  }
+  let state = await getState();
+  assert.deepEqual(state.musicPlaylist.map(song => song.name), [
+    'Kullanıcı sesi 1', 'Kullanıcı sesi 2', 'Kullanıcı sesi 3'
+  ]);
+  for (const item of state.musicPlaylist) {
+    const res = await fetch(base + item.url, { headers: { Range: 'bytes=0-2' } });
+    assert.equal(res.status, 206);
+    assert.equal(Buffer.from(await res.arrayBuffer()).toString(), 'ID3');
+  }
+  await post('music-default', { slot: 2 });
+  state = await getState();
+  assert.equal(state.musicPlaylist[0].name, 'Kullanıcı sesi 1');
+  assert.equal(state.musicPlaylist[1].url, '');
+  assert.equal(state.musicPlaylist[2].name, 'Kullanıcı sesi 3');
+  const invalid = await fetch(base + '/api/music', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slot: 4, dataUrl: 'data:audio/mpeg;base64,' + audioData })
+  });
+  assert.equal(invalid.status, 400);
+  await post('music-default');
+  state = await getState();
+  assert.equal(state.musicPlaylist.filter(song => song.url).length, 0);
+  assert.equal(state.musicUrl, '');
+});
+
+test('music and effect volumes are separate and validated',async()=>{
+  await post('audio',{musicVolume:.3,sfxVolume:.9});
+  const s=await getState();
+  assert.equal(s.audio.musicVolume,.3);assert.equal(s.audio.sfxVolume,.9);
+  const bad=await fetch(base+'/api/audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sfxVolume:-1})});
+  assert.equal(bad.status,400);
+  await post('audio',{musicVolume:.7,sfxVolume:.6});
 });
 
 test('static files cannot escape the public folder',async()=>{

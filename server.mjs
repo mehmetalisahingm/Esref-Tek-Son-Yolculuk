@@ -17,6 +17,33 @@ const LIKE_MILESTONE = 1000;
 const DEFAULT_PORTRAIT_URL = 'https://image.kanald.com.tr/i/kanald/100/200x286/6864d72ccf62483f9cfa5def.jpg';
 const PORTRAIT_COST = 500;
 const savedPortrait = ['jpg', 'png', 'webp'].find(ext => existsSync(path.join(PUBLIC, `portrait-custom.${ext}`)));
+const MUSIC_EXTS = ['mp3', 'm4a', 'ogg', 'wav'];
+const MAX_MUSIC_BYTES = 15 * 1024 * 1024;
+const savedMusic = MUSIC_EXTS.find(ext => existsSync(path.join(PUBLIC, `music-custom.${ext}`)));
+const musicNameFile = path.join(PUBLIC, 'music-custom.name.txt');
+let savedMusicName = '';
+try { savedMusicName = savedMusic ? (await fs.readFile(musicNameFile, 'utf8')).slice(0, 80) : ''; } catch {}
+// Playlist slots are stored locally; never commit or fetch audio from YouTube.
+const savedPlaylist = [
+  { url: savedMusic ? `/music-custom.${savedMusic}` : '', name: savedMusic ? (savedMusicName || 'Yüklenen şarkı') : '' },
+  ...await Promise.all([2, 3].map(async slot => {
+    const stem = `music-custom-${slot}`;
+    const ext = MUSIC_EXTS.find(x => existsSync(path.join(PUBLIC, `${stem}.${x}`)));
+    if (!ext) return { url: '', name: '' };
+    let name = '';
+    try { name = (await fs.readFile(path.join(PUBLIC, `${stem}.name.txt`), 'utf8')).slice(0, 80); } catch {}
+    return { url: `/${stem}.${ext}`, name: name || `Şarkı ${slot}` };
+  })),
+];
+// Identify an uploaded audio file by its first bytes rather than trusting the browser's MIME type.
+function sniffAudio(b) {
+  if (b.length < 12) return null;
+  if (b.subarray(0, 3).toString('latin1') === 'ID3' || (b[0] === 0xff && (b[1] & 0xe0) === 0xe0)) return 'mp3';
+  if (b.subarray(0, 4).toString('latin1') === 'OggS') return 'ogg';
+  if (b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WAVE') return 'wav';
+  if (b.subarray(4, 8).toString('latin1') === 'ftyp') return 'm4a';
+  return null;
+}
 
 const seedUsers = ['alikaya','denizx','efemert','sevda','emir.07','buse','kubilay','ayse.52','yagmur','mustafa','berke','irem','furkan','selin','mertcan','ece','kaang','dila','onur','elif','kerem','berat','zeynep','melis','umutt','azra','yunus','gizem','sinem','harun'];
 const seedComments = ['Başın sağ olsun Eşref','Efsaneler ölmez 🖤','Rüya bitmesin...','Son yolculuğunda yanındayız','Mekânın cennet olsun','Unutulmayacaksın','🕯️🕯️🕯️','Kalbimizdesin abi'];
@@ -26,7 +53,8 @@ const state = {
   carriers: Array(6).fill(null), portraitBearer: null, portraitCost: PORTRAIT_COST,
   portraitUrl: savedPortrait ? `/portrait-custom.${savedPortrait}` : DEFAULT_PORTRAIT_URL,
   people: [], events: [], gifts: 0, giftPoints: 0, totalChats: 0, likes: 0, follows: 0, shares: 0,
-  viewerCount: null, audio: { music: true, sfx: true, volume: 0.65 }, revision: 0,
+  viewerCount: null, audio: { music: true, sfx: true, volume: 0.8, musicVolume: 0.7, sfxVolume: 0.6 },
+  musicUrl: savedPlaylist[0].url, musicName: savedPlaylist[0].name, musicPlaylist: savedPlaylist, revision: 0,
 };
 const clients = new Set();
 let nextId = 0;
@@ -64,7 +92,7 @@ function snapshot() {
     portraitBearer: state.portraitBearer, portraitCost: state.portraitCost, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
     likes: state.likes, follows: state.follows, shares: state.shares, viewerCount: state.viewerCount,
-    leaderboard: leaderboard(), audio: state.audio, revision: state.revision,
+    leaderboard: leaderboard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
   };
 }
 // Coalesce bursts (likes on a busy stream can arrive dozens per second) into ≤ 12 pushes per second.
@@ -330,11 +358,22 @@ async function connect(username) {
   wantConnected = true;
 }
 
-const mime = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+const mime = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg', '.wav': 'audio/wav' };
 async function sendFile(req, res, target, cache = 'no-cache') {
   const file = await fs.readFile(target).catch(() => null);
   if (!file) return respond(res, 404, { error: 'Dosya bulunamadı' });
-  res.writeHead(200, { 'Content-Type': mime[path.extname(target)] || 'application/octet-stream', 'Cache-Control': cache });
+  const type = mime[path.extname(target)] || 'application/octet-stream';
+  // Byte ranges let the browser's audio player loop and seek a song smoothly.
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (range && (range[1] || range[2])) {
+    let start = range[1] ? Number(range[1]) : file.length - Number(range[2]);
+    let end = range[1] && range[2] ? Number(range[2]) : file.length - 1;
+    start = Math.max(0, start); end = Math.min(file.length - 1, end);
+    if (start > end) { res.writeHead(416, { 'Content-Range': `bytes */${file.length}` }); return res.end(); }
+    res.writeHead(206, { 'Content-Type': type, 'Cache-Control': cache, 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${file.length}`, 'Content-Length': end - start + 1 });
+    return res.end(req.method === 'HEAD' ? undefined : file.subarray(start, end + 1));
+  }
+  res.writeHead(200, { 'Content-Type': type, 'Cache-Control': cache, 'Accept-Ranges': 'bytes', 'Content-Length': file.length });
   res.end(req.method === 'HEAD' ? undefined : file);
 }
 const server = http.createServer(async (req, res) => {
@@ -351,7 +390,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/state') return respond(res, 200, snapshot());
     if (req.method === 'POST' && url.pathname.startsWith('/api/')) {
       if (!originAllowed(req)) return respond(res, 403, { error: 'Cross-origin istek reddedildi' });
-      const body = await readBody(req, url.pathname === '/api/portrait' ? 3500000 : 16384);
+      const body = await readBody(req, url.pathname === '/api/portrait' ? 3500000 : url.pathname === '/api/music' ? Math.ceil(MAX_MUSIC_BYTES * 1.4) + 4096 : 16384);
       switch (url.pathname) {
         case '/api/chat': { const p = chat(body.name, body.id, false, body.comment); return respond(res, 200, { ok: true, person: p }); }
         case '/api/gift': { const p = gift(body.name, body.id, body.giftName || 'Gül', body.amount || 1, false, body.unitPoints ?? 1); return respond(res, 200, { ok: true, person: p }); }
@@ -368,8 +407,48 @@ const server = http.createServer(async (req, res) => {
           const a = state.audio;
           if (typeof body.music === 'boolean') a.music = body.music;
           if (typeof body.sfx === 'boolean') a.sfx = body.sfx;
-          if (body.volume !== undefined) { const v = Number(body.volume); if (!Number.isFinite(v) || v < 0 || v > 1) return respond(res, 400, { error: 'Ses 0–1 arasında olmalı' }); a.volume = Math.round(v * 100) / 100; }
+          for (const key of ['volume', 'musicVolume', 'sfxVolume']) {
+            if (body[key] === undefined) continue;
+            const v = Number(body[key]);
+            if (!Number.isFinite(v) || v < 0 || v > 1) return respond(res, 400, { error: 'Ses 0–1 arasında olmalı' });
+            a[key] = Math.round(v * 100) / 100;
+          }
           emit(); return respond(res, 200, { ok: true, audio: a });
+        }
+        case '/api/music': {
+          const slot = body.slot === undefined ? 1 : Number(body.slot);
+          if (!Number.isInteger(slot) || slot < 1 || slot > 3) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
+          const match = /^data:[\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+          if (!match) return respond(res, 400, { error: 'Şarkı dosyası okunamadı' });
+          const data = Buffer.from(match[1], 'base64');
+          if (!data.length || data.length > MAX_MUSIC_BYTES) return respond(res, 400, { error: 'Şarkı en fazla 15 MB olabilir' });
+          const format = sniffAudio(data);
+          if (!format) return respond(res, 400, { error: 'MP3, M4A, OGG veya WAV yükleyebilirsin' });
+          const stem = slot === 1 ? 'music-custom' : `music-custom-${slot}`;
+          await fs.writeFile(path.join(PUBLIC, `${stem}.${format}`), data);
+          await Promise.all(MUSIC_EXTS.filter(ext => ext !== format).map(ext => fs.unlink(path.join(PUBLIC, `${stem}.${ext}`)).catch(() => {})));
+          const name = cleanText(String(body.name || '').replace(/\.[a-z0-9]{2,4}$/i, ''), 60) || `Şarkı ${slot}`;
+          await fs.writeFile(path.join(PUBLIC, `${stem}.name.txt`), name);
+          const url = `/${stem}.${format}?v=${Date.now()}`;
+          state.musicPlaylist[slot - 1] = { url, name };
+          if (slot === 1) { state.musicUrl = url; state.musicName = name; }
+          state.audio.music = true;
+          event('info', 'MÜZİK', `${slot}. sıraya eklendi: ${name}`); emit();
+          return respond(res, 200, { ok: true, slot, musicUrl: url, musicName: name, musicPlaylist: state.musicPlaylist });
+        }
+        case '/api/music-default': {
+          const slot = body.slot === undefined ? null : Number(body.slot);
+          if (slot !== null && (!Number.isInteger(slot) || slot < 1 || slot > 3)) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
+          const slots = slot === null ? [1, 2, 3] : [slot];
+          await Promise.all(slots.flatMap(n => {
+            const stem = n === 1 ? 'music-custom' : `music-custom-${n}`;
+            return [...MUSIC_EXTS.map(ext => `${stem}.${ext}`), `${stem}.name.txt`]
+              .map(file => fs.unlink(path.join(PUBLIC, file)).catch(() => {}));
+          }));
+          for (const n of slots) state.musicPlaylist[n - 1] = { url: '', name: '' };
+          if (slot === null || slot === 1) { state.musicUrl = ''; state.musicName = ''; }
+          event('info', 'MÜZİK', slot === null ? 'Varsayılan müziğe dönüldü' : `${slot}. sıradaki şarkı kaldırıldı`); emit();
+          return respond(res, 200, { ok: true, musicPlaylist: state.musicPlaylist });
         }
         case '/api/portrait': {
           const source = String(body.dataUrl || '');

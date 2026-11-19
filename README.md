@@ -7,7 +7,8 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 ## Sürüm 2.0'da neler var
 
 - **Sinematik 3D sahne:** alacakaranlık gökyüzü, ay, uzakta cami siluetli şehir, selvi ağaçları, fenerler, sis, süzülen gül yaprakları ve yeşil örtülü, altın işlemeli tabut.
-- **Ses:** Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
+- **Kendi şarkın:** kontrol panelinden MP3 / M4A / OGG / WAV yükle (en fazla 15 MB). Overlay döngüde çalar, hediye ve taht duyurularında kısa süre kısar. Ana ses, müzik ve efekt seviyeleri ayrı ayarlanır. Dosya yalnızca bilgisayarda (`public/music-custom.*`) kalır, repoya gitmez. Telifli şarkıları TikTok canlı yayında sessize alabilir.
+- **Varsayılan müzik:** şarkı yüklenmezse Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
 - **Yorum balonları:** yorum yazan izleyicinin sözü 7 saniye boyunca sahnede kendi karakterinin üstünde görünür.
 - **Beğeni = mum:** beğenen izleyicinin karakteri elinde yanan mumla yürür; her 1.000 beğenide sahnede kutlama olur.
 - **Hediye alarmları:** altın bant, parıltı patlaması ve gül yağmuru. Büyük hediyeler daha büyük gösterilir.
@@ -17,6 +18,22 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 - **Anma anı:** overlay'de 2,5 dakikada bir, ortalık sakinken fotoğraflı "Hatırası kalbimizde" kartı ve mum yakma çağrısı çıkar.
 - **Işıltı:** mumlar, fenerler ve altın detaylar yumuşakça parlar. Zayıf bilgisayarda `&nobloom=1` ile kapatılabilir.
 - **Sağlamlık:** 3D motoru yerelden sunulur (CDN gerekmez), bağlantı koparsa otomatik yeniden bağlanır, yayın bitince durur.
+
+## Üç parçalık sıralı müzik döngüsü
+
+Kontrol paneli → **Müzik ve Ses** alanında kullanıcı tarafından verilen üç YouTube Shorts referansı listelenir:
+
+1. https://youtube.com/shorts/GFqF4v7H0hE
+2. https://youtube.com/shorts/FxYN7qI83k4
+3. https://youtube.com/shorts/pl-jrOZ1jEM
+
+Bu bağlantılardan ses otomatik indirilmez, çekilmez veya arka planda saklı YouTube oynatıcısıyla çalınmaz. Kullanma hakkın olan üç ses dosyasını MP3, M4A, OGG veya WAV olarak sırasıyla **1 / 2 / 3** alanlarına yükle. Her dosya en fazla 15 MB olabilir. Böylece yayın ekranında **1 → 2 → 3 → 1** döngüsü çalışır. Boş yuvalar atlanır; her ses bittiğinde sonraki başlar. Yüklü ses yoksa önceki Chopin sentezi çalar.
+
+- Yerel dosyalar `public/music-custom.*`, `public/music-custom-2.*`, `public/music-custom-3.*` olarak saklanır. Git'e yüklenmezler.
+- Oyun sunucusunu yeniden başlatsan bile yüklenen sesler kullanılabilir.
+- Şarkı eklemek/çıkarmak, hediye seslerini ve ayrı ses ayarlarını etkilemez.
+- OBS'de yayın sesinin etkin olduğundan emin ol. Tarayıcı otomatik oynatmayı engellerse ses başlatma düğmesini bir kez kullan.
+- YouTube'un sesini videodan ayırıp gizli audio-only player ile çalmak uygun bir yöntem değildir; ayrıca müziklerin TikTok yayın hakları gerekir. Hak sahibi izni olmadan telifli ses kullanmak yayın sesinin kapanmasına yol açabilir.
 
 ## Windows'ta 1 dakikada çalıştır
 
@@ -106,7 +123,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 14 senaryoyu doğrular. GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 16 senaryoyu doğrular. GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 

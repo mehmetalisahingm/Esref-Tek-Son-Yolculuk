@@ -213,7 +213,9 @@ body.compact .float-lane{bottom:calc(var(--u)*420px)}
 .switch span::after{content:'';position:absolute;left:3px;top:3px;width:13px;height:13px;border-radius:50%;background:#9aa6a1;transition:.2s}
 .switch input:checked+span{background:#8a6a2e}
 .switch input:checked+span::after{left:18px;background:var(--gold-2)}
-.range{width:100%;accent-color:var(--gold)}
+.range{width:100%;accent-color:var(--gold);margin:0 0 12px}
+.sliders{margin-top:4px}
+.now-playing{font-size:13px;font-weight:700;color:var(--gold-2);margin:0 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .setting-inline{display:flex;gap:8px;align-items:center}
 .setting-inline input[type=number]{border-radius:10px;border:1px solid #2b3a3d;background:#091012}
 .setting-note{font-size:11.5px;color:#7f908a;line-height:1.5;margin:10px 0 14px}
@@ -264,3 +266,12 @@ body.overlay .game-frame{position:fixed;top:0;left:50%;transform:translateX(-50%
 @keyframes takeover{0%{opacity:0}8%{opacity:1}88%{opacity:1}100%{opacity:0}}
 .takeover.show .takeover-card{animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
 @media (prefers-reduced-motion:reduce){.shimmer,.takeover .rays,.progress span{animation:none}}
+
+/* Three ordered broadcast soundtrack uploads; music stays off the OBS canvas controls. */
+.playlist-slots{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.playlist-slot{padding:10px;border:1px solid var(--border);border-radius:10px;background:rgba(7,13,14,.5)}
+.playlist-slot .setting-inline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.playlist-slot .setting-inline label{margin:0}
+.playlist-slot .upload-input{display:block;width:100%;margin:8px 0 2px}
+.playlist-slot .playlist-status{color:var(--muted);font-size:11px;display:block;overflow-wrap:anywhere}
+.playlist-slot a{color:var(--gold-2);text-decoration:underline}
