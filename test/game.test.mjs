@@ -1,3 +1,4 @@
+import {tmpdir} from 'node:os';
 import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
 import { playlistUrls, nextTrackIndex } from '../public/playlist.js';
@@ -7,7 +8,7 @@ const PORT=31000+Math.floor(Math.random()*500);
 const base=`http://127.0.0.1:${PORT}`;
 let child;
 before(async()=>{
-  child=spawn(process.execPath,['server.mjs'],{cwd:process.cwd(),env:{...process.env,PORT:String(PORT)},stdio:'ignore'});
+  child=spawn(process.execPath,['server.mjs'],{cwd:process.cwd(),env:{...process.env,PORT:String(PORT),SON_YOLCULUK_CONFIG:tmpdir()+'/sy-game-test.json'},stdio:'ignore'});
   for(let i=0;i<45;i++){
     if(child.exitCode!==null)throw new Error('Sunucu başlamadı');
     try {const r=await fetch(base+'/api/state');if(r.ok)return;}catch{}

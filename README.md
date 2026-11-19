@@ -56,28 +56,33 @@ Ek adres seçenekleri: `&compact=1` alt paneli küçültür (TikTok'un yorum sü
 
 Overlay sesi otomatik başlatamazsa sağ üstte **🔊 Sesi başlat** düğmesi çıkar; OBS'de kaynağa sağ tıklayıp **Etkileşim** ile bir kez tıkla.
 
-## Gerçek TikTok LIVE verilerini bağla
+## Gerçek TikTok LIVE verilerini bağla (köprü)
 
-Yayın açmadan önce terminalde bu klasörün içinde:
+Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve izleyici sayısını** oyuna taşır. Kontrol panelindeki **TikTok LIVE Köprüsü** bölümünde iki yol var:
 
-```bash
-npm install
-node server.mjs
-```
+**1. Doğrudan WebSocket (varsayılan)**
+1. TikTok'ta canlı yayını aç.
+2. Panelde kullanıcı adını **@ olmadan** yaz, **API token** alanına imza servisi token'ını yapıştır ve **Yayına Bağlan**'a bas. Token bir kez girilir, bilgisayardaki `config.local.json` dosyasında saklanır; tarayıcıya ve GitHub'a gitmez.
+3. TikTok canlı WebSocket bağlantısının imzalanmasını istediği için token gerekir. Anahtarsız kullanım çok sınırlıdır.
+4. **TikTok şifreni ya da `sessionid` çerezini asla yapıştırma**; bunlar hesabına tam erişim verir.
+5. Yayın henüz açık değilse köprü bekler ve yayın başlayınca kendiliğinden bağlanır.
 
-Sonra normal kontrol panelinde TikTok kullanıcı adını **@ olmadan** gir ve **Yayına Bağlan** düğmesine bas.
+**2. TikFinity (yedek, token yoksa)**
+1. [TikFinity](https://tikfinity.zerody.one/)'nin Windows masaüstü uygulamasını aynı bilgisayarda aç, TikTok hesabınla yayınına bağla.
+2. Panelde **TikFinity** sekmesinde adresi `ws://127.0.0.1:21213/` olarak bırak ve bağlan. Bağlıyken 60 saniye olay gelmezse panel uyarır.
 
-- **Normal hediye:** gönderen kişi altı taşıyıcıdan birine alınır.
-- **Özel fotoğraf taşıma:** TikTok'un bildirdiği `gift.diamondCount` değeri × adet, kullanıcının bu yayındaki *hediye puanına* eklenir. Varsayılan eşiği **500** puan; kontrol panelinden 10–100.000 arasında değiştirebilirsin. Eşiği aşan ve en yüksek toplam puana sahip izleyici, 6 kişinin dışında tek başına Eşref Tek fotoğrafını taşır. Başkası daha fazla puan toplarsa yerini alır. Bu hesap gerçek para, kullanıcının TikTok cüzdanı ya da kesin coin fiyatı iddiası değildir. Bağlayıcı puan değerini iletmezse özel rol için 0 puan sayılır (normal hediye taşıyıcıya yansır).
-- **Fotoğraf değişimi:** Kontrol panelindeki fotoğraf yükleme alanı JPEG / PNG / WebP, en fazla 2 MB. Bu görsel yerel sunucuda `public/portrait-custom.*` olarak saklanır ve OBS ekranında da görünür. Varsayılan resmin yüklenmesi için internet gerekir.
-- **Yorum:** gönderen kişi arkadaki korteje eklenir, yorumu sahnede balon olarak görünür.
-- **Beğeni:** kişi korteje eklenir ve elinde mum yanar.
-- **Takip / paylaşım:** sahnede duyurulur, kişi korteje eklenir.
-- **İzleyici sayısı:** TikTok'un bildirdiği anlık izleyici sayısı sağ üstte görünür.
-- **Üye/giriş/takip bildirimi:** kullanıcı görünüyorsa korteje eklenir; tüm sessiz izleyiciler TikTok tarafından ayrı ayrı bildirilmez.
-- **Hediye serisi:** tekrar sayısı kümülatif olduğunda farkı alınır.
+**Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
-Bu bağlantı **resmî TikTok API'si değildir**. TikTok protokolü/bağlantı sağlayıcısı değişikliklerinde çalışma garantisi yoktur; canlı yayınla uçtan uca test gereklidir. Bazı canlı yayınlara bağlanmak için üçüncü taraf imzalama sağlayıcısında API anahtarı gerekebilir (resmî doküman: https://ttlc.docs.isaackogan.com/). Bu proje TikTok hesabının giriş bilgilerini istemez veya saklamaz. Yayın açık değilse bağlantı kurulamaz.
+**Olaylar oyunda ne yapar?**
+- **Hediye:** gönderen altı tabut taşıyıcısından birine alınır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
+- **Fotoğraf taşıyıcısı:** TikTok'un bildirdiği elmas değeri × adet, kişinin hediye puanına eklenir. Eşiği (varsayılan 500) aşan ve en çok puanı olan izleyici fotoğrafı taşır. Bu değer gerçek para ya da cüzdan bilgisi değildir.
+- **Yorum:** kişi korteje katılır, yorumu sahnede balon olarak görünür.
+- **Beğeni:** kişi korteje katılır, elinde mum yanar.
+- **Takip / paylaşım:** sahnede duyurulur, kişi korteje katılır.
+- **Katılım:** TikTok'un bildirdiği izleyiciler kortejde yürür (TikTok her sessiz izleyiciyi bildirmez).
+- **İzleyici sayısı:** sağ üstte görünür.
+
+Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değişikliklerde bozulabilir. Yayından önce kısa bir deneme yap. Proje TikTok hesap şifreni istemez ve saklamaz.
 
 ## Yayın kuralları
 
@@ -105,7 +110,8 @@ Kanal D resmî karakter portresi varsayılan olarak uzak URL'den yüklenir; inte
 
 ## Dosyalar
 
-`server.mjs` — oyun durumu, rotasyon, SSE, TikTok entegrasyonu  
+`server.mjs` — oyun durumu, rotasyon, SSE, API  
+`bridge.mjs` — TikTok LIVE köprüsü (TikFinity WebSocket ve doğrudan)  
 `public/index.html` — dikey oyun ve yayın kontrol paneli  
 `public/style.css` — duyarlı tasarım  
 `public/app.js` — tarayıcı yönetimi, alarmlar, kontrol paneli  
@@ -123,7 +129,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 16 senaryoyu doğrular. GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 29 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 

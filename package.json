@@ -9,7 +9,8 @@
     "test": "node --test"
   },
   "dependencies": {
-    "three": "0.170.0"
+    "three": "0.170.0",
+    "ws": "^8.18.0"
   },
   "optionalDependencies": {
     "tiktok-live-connector": "^2.5.0"

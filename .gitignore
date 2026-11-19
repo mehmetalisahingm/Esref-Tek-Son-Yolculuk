@@ -6,3 +6,4 @@ public/portrait-custom.*
 public/music-custom.*
 public/music-custom-*
 *.zip
+config.local.json
