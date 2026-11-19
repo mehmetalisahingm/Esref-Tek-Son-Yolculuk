@@ -36,10 +36,12 @@ test('six highest likers carry the coffin, including after a late surge',async()
   await post('reset');
   for(let i=0;i<7;i++) await post('like',{name:`liker${i}`,id:`liker${i}`,count:i+1});
   let s=await getState();
-  assert.deepEqual(s.carriers.map(p=>p.likes),[7,6,5,4,3,2]);
+  assert.deepEqual(s.carriers.map(p=>p.likes).sort((a,b)=>b-a),[7,6,5,4,3,2]);
+  const before = new Map(s.carriers.map((p, i) => [p.id, i]));
   await post('like',{name:'liker0',id:'liker0',count:10});
   s=await getState();
-  assert.equal(s.carriers[0].id,'liker0');
+  assert.ok(s.carriers.some(p=>p.id==='liker0'));
+  for (const p of s.carriers) if (p.id !== 'liker0') assert.equal(s.carriers.indexOf(p), before.get(p.id));
   assert.equal(s.people.find(p=>p.id==='liker0').likes,11);
 });
 test('gifts alone do not put a viewer on the coffin',async()=>{
@@ -69,11 +71,11 @@ test('most gifts wins portrait and frees their coffin place for the next liker',
   await post('gift',{name:'p0',id:'p0',amount:1,unitPoints:1});
   let s=await getState();
   assert.equal(s.portraitBearer.id,'p0');
-  assert.deepEqual(s.carriers.map(p=>p.id),['p1','p2','p3','p4','p5','p6']);
+  assert.deepEqual(new Set(s.carriers.map(p=>p.id)),new Set(['p1','p2','p3','p4','p5','p6']));
   await post('gift',{name:'p1',id:'p1',amount:2,unitPoints:0});
   s=await getState();
   assert.equal(s.portraitBearer.id,'p1');
-  assert.deepEqual(s.carriers.map(p=>p.id),['p0','p2','p3','p4','p5','p6']);
+  assert.deepEqual(new Set(s.carriers.map(p=>p.id)),new Set(['p0','p2','p3','p4','p5','p6']));
   assert.equal(new Set([...s.carriers.map(p=>p.id),s.portraitBearer.id]).size,7);
 });
 test('gift count determines the winner even if another gift has more points',async()=>{

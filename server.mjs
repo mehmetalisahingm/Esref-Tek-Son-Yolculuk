@@ -156,12 +156,21 @@ function choosePortraitBearer() {
   return true;
 }
 function rankCarriers() {
-  // Portrait and coffin are separate roles; ties retain the existing rank.
+  // Retain existing shoulder positions while the viewer remains in the top six.
   const old = state.carriers.filter(Boolean);
   const order = new Map(old.map((p, i) => [p.id, i]));
-  const candidates = state.people.filter(p => p.likes > 0 && p.id !== state.portraitBearer?.id)
-    .sort((a, b) => b.likes - a.likes || (order.get(a.id) ?? 1000000) - (order.get(b.id) ?? 1000000) || a.joined - b.joined);
-  state.carriers = Array.from({ length: 6 }, (_, i) => candidates[i] || null);
+  const ranked = state.people.filter(p => p.likes > 0 && p.id !== state.portraitBearer?.id)
+    .sort((a, b) => b.likes - a.likes || (order.get(a.id) ?? 1000000) - (order.get(b.id) ?? 1000000) || a.joined - b.joined).slice(0, 6);
+  const keep = new Set(ranked.map(p => p.id));
+  const next = state.carriers.map(p => p && keep.has(p.id) ? p : null);
+  for (const p of old) if (!keep.has(p.id) && p.id !== state.portraitBearer?.id) event('rotate', p.name, 'Omzunu devretti · korteje geçti');
+  for (const p of ranked) {
+    if (next.some(c => c?.id === p.id)) continue;
+    const slot = next.indexOf(null);
+    next[slot] = p;
+    event('carrier', p.name, `${slot + 1}. omuz · ${p.likes.toLocaleString('tr-TR')} beğeni`, { slot, likes: p.likes });
+  }
+  state.carriers = next;
 }
 export function gift(name, id, giftName = 'Hediye', amount = 1, demo = false, unitPoints = 1) {
   const { person } = personFor(name, id, demo);

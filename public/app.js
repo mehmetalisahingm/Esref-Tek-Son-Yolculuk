@@ -6,7 +6,6 @@ const qs = new URLSearchParams(location.search);
 const overlay = qs.has('overlay');
 const forceFallback = qs.has('fallback');
 if (overlay) document.body.classList.add('overlay');
-if (qs.has('compact')) document.body.classList.add('compact');
 
 const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], bridge: null, audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
 let state = initial;
@@ -115,6 +114,7 @@ function handleEvent(e) {
       break;
     case 'like': floatUp(Math.random() > .5 ? '🕯️' : '🤍'); audio.play('like'); break;
     case 'join': joinFeed(`↗ ${at(e.name)} korteje katıldı`); audio.play('join'); break;
+    case 'carrier': joinFeed(`❤️ ${at(e.name)} tabutu omuzladı · ${fmt(e.likes)} beğeni`); audio.play('carrier'); break;
     case 'chat': audio.play('chat'); break;
     case 'share': joinFeed(`↻ ${at(e.name)} yayını paylaştı`); audio.play('follow'); break;
   }
@@ -125,7 +125,7 @@ function processEvents(s) {
   if (seenEvents.size > 400) { const keep = new Set((s.events || []).map(e => e.id)); seenEvents.clear(); keep.forEach(id => seenEvents.add(id)); }
   if (firstState) return;
   const ordered = fresh.reverse();
-  const important = ordered.filter(e => e.type === 'portrait' || e.type === 'gift' || e.type === 'milestone' || e.type === 'follow');
+  const important = ordered.filter(e => ['portrait', 'gift', 'milestone', 'follow', 'carrier'].includes(e.type));
   const minor = ordered.filter(e => !important.includes(e)).slice(-6);
   [...minor, ...important].sort((a, b) => a.time - b.time).forEach(handleEvent);
 }
@@ -145,7 +145,7 @@ function updateCarriers(s) {
     const p = s.carriers[i];
     el.classList.toggle('empty', !p);
     const handle = el.querySelector('.carrier-handle'), gifts = el.querySelector('.carrier-gifts');
-    const name = p ? at(p.name) : 'Boş omuz';
+    const name = p ? at(p.name) : 'Boş omuz · beğen';
     if (handle.textContent !== name) { handle.textContent = name; if (p && !firstState) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }
     gifts.textContent = p ? `💗${short(p.likes)}` : '💗';
   });
@@ -264,6 +264,7 @@ function showState(next) {
   const crowd = next.people.length;
   text('#viewer-count', short(next.viewerCount ?? crowd));
   text('#like-count', short(next.likes || 0));
+  text('#candle-total', short((next.people || []).filter(p => p.followed).length));
   text('#stats-audience', fmt(crowd));
   text('#stats-carriers', `${next.carriers.filter(Boolean).length} / 6`);
   text('#stats-gifts', fmt(next.gifts));
@@ -283,7 +284,7 @@ let memorialIndex = 0;
 function memorialMoment() {
   if (!overlay && !previewOn && !qs.has('memorial')) return;
   if (alertBusy || alertQueue.length) return;
-  queueAlert({ kind: 'memorial', title: 'Eşref Tek', sub: memorialLines[memorialIndex++ % memorialLines.length], cta: '🕯️ Beğen, onun için bir mum yak' });
+  queueAlert({ kind: 'memorial', title: 'Eşref Tek', sub: memorialLines[memorialIndex++ % memorialLines.length], cta: '🕯️ Takip et, onun için bir mum yak' });
   audio.play('milestone');
 }
 setTimeout(memorialMoment, Number(qs.get('memorialFirst') || 30000));
@@ -293,9 +294,10 @@ setInterval(memorialMoment, 150000);
 let ctaIndex = 0;
 function rotateCta() {
   const lines = [
+    '❤️ En çok beğenen 6 kişi tabutu taşır',
+    '🕯️ Takip eden mum yakar',
+    "🎁 En çok hediye atan Eşref Tek'in fotoğrafını taşır",
     '💬 Yorum yaz → korteje katıl, sözün sahnede görünsün',
-    '💗 En çok beğeni atanlar → tabutu omuzlar',
-    '🎁 En çok hediye gönderen → fotoğrafı taşır',
     '🕯️ Takip et → kortejde mum yak',
   ];
   const el = $('#cta-text');

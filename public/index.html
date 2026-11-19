@@ -56,11 +56,16 @@
             </div>
           </div>
 
-          <div class="hud-bottom">
+          <div class="hud-board">
+            <div class="rules-strip">
+              <div class="rule"><i>❤️</i><span><b>En çok beğenen 6</b> → tabut</span></div>
+              <div class="rule"><i>🕯️</i><span><b>Takip eden mum yakar</b> · <em id="candle-total">0</em></span></div>
+              <div class="rule gold"><i>🎁</i><span><b>En çok hediye</b> → fotoğraf</span></div>
+            </div>
             <div class="throne-card" id="throne-card">
               <div class="throne-photo"><b class="portrait-monogram">ET</b><img id="portrait-thumb" alt="" referrerpolicy="no-referrer"><i class="ribbon"></i></div>
               <div class="throne-copy">
-                <span class="throne-kicker">👑 FOTOĞRAFI TAŞIYAN</span>
+                <span class="throne-kicker">👑 EŞREF TEK'İN FOTOĞRAFINI TAŞIYAN · EN ÇOK HEDİYE</span>
                 <strong id="portrait-holder">@efsane.dostu</strong>
                 <div class="progress"><span id="challenge-bar"></span></div>
                 <small id="challenge-text">İlk hediyeyi gönderen fotoğrafı taşır</small>
@@ -68,7 +73,7 @@
               <div class="throne-points"><b id="holder-points">0</b><small>hediye</small></div>
             </div>
             <div class="leader-row" id="leaderboard"></div>
-            <div class="carriers-heading"><span class="heading-line"></span><span>✦ TABUTU OMUZLAYANLAR ✦</span><span class="heading-line"></span></div>
+            <div class="carriers-heading"><span class="heading-line"></span><span>✦ TABUTU TAŞIYANLAR · EN ÇOK BEĞENEN 6 KİŞİ ✦</span><span class="heading-line"></span></div>
             <div class="carriers-grid" id="carriers-grid"></div>
             <div class="cta" id="cta"><span id="cta-text">💗 En çok beğeni atanlar → tabutu omuzlar</span></div>
           </div>
@@ -180,7 +185,7 @@
         </div>
 
         <div class="panel activity-panel"><div class="panel-heading"><div class="panel-icon neutral">▤</div><div><h3>Son Hareketler</h3><p>Canlı olarak güncellenir</p></div><span class="activity-indicator"></span></div><div id="activity" class="activity"></div></div>
-        <div class="panel help-panel"><span class="help-icon">ⓘ</span><div><strong>OBS / TikTok LIVE Studio</strong><p>Tarayıcı kaynağı: <code id="overlay-url">http://localhost:3000/?overlay=1</code> · 540 × 960 (veya 1080 × 1920). Alt kısmı TikTok yorumları kapatıyorsa <code>&amp;compact=1</code> ekle.</p><button id="copy-overlay" class="small-button">Adresi kopyala</button></div></div>
+        <div class="panel help-panel"><span class="help-icon">ⓘ</span><div><strong>OBS / TikTok LIVE Studio</strong><p>Tarayıcı kaynağı: <code id="overlay-url">http://localhost:3000/?overlay=1</code> · 540 × 960 (veya 1080 × 1920). Bilgi panosu üstte, alt kısım TikTok yorumlarına boş bırakıldı.</p><button id="copy-overlay" class="small-button">Adresi kopyala</button></div></div>
       </aside>
     </section>
     <footer class="site-footer"><span>✦ SON YOLCULUK — Özgün, temsili bir fan oyunu</span><span>Made for interactive livestreams · 2026</span></footer>
