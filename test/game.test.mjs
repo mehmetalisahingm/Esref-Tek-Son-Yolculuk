@@ -158,7 +158,7 @@ test('an uploaded song is validated, served with byte ranges and can be removed'
   assert.equal(bad.status,400);
   await post('music-default');
   s=await getState();
-  assert.equal(s.musicUrl,'');
+  assert.equal(s.musicUrl,'/music/default-1.m4a');
 });
 
 test('ordered playlist cycles 1 -> 2 -> 3 -> 1 and skips empty slots', () => {
@@ -171,13 +171,15 @@ test('ordered playlist cycles 1 -> 2 -> 3 -> 1 and skips empty slots', () => {
   assert.equal(nextTrackIndex(0, 2), 1);
   assert.equal(nextTrackIndex(1, 2), 0);
   assert.equal(nextTrackIndex(2, 3), 0);
+  assert.equal(nextTrackIndex(3, 4), 0);
+  assert.deepEqual(playlistUrls([{url:'/music-custom-4.m4a'},{url:'/music/default-4.m4a'}]), ['/music-custom-4.m4a','/music/default-4.m4a']);
   assert.equal(nextTrackIndex(0, 0), -1);
   assert.deepEqual(playlistUrls([{ url: 'https://youtube.com/shorts/example' }]), []);
 });
 
 test('three upload slots persist as ordered state, serve audio and clear independently', async () => {
   const audioData = Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64, 1)]).toString('base64');
-  for (let slot = 1; slot <= 3; slot++) {
+  for (let slot = 1; slot <= 4; slot++) {
     const response = await post('music', {
       slot, dataUrl: 'data:audio/mpeg;base64,' + audioData, name: `Kullanıcı sesi ${slot}.mp3`
     });
@@ -186,7 +188,7 @@ test('three upload slots persist as ordered state, serve audio and clear indepen
   }
   let state = await getState();
   assert.deepEqual(state.musicPlaylist.map(song => song.name), [
-    'Kullanıcı sesi 1', 'Kullanıcı sesi 2', 'Kullanıcı sesi 3'
+    'Kullanıcı sesi 1', 'Kullanıcı sesi 2', 'Kullanıcı sesi 3', 'Kullanıcı sesi 4'
   ]);
   for (const item of state.musicPlaylist) {
     const res = await fetch(base + item.url, { headers: { Range: 'bytes=0-2' } });
@@ -200,13 +202,13 @@ test('three upload slots persist as ordered state, serve audio and clear indepen
   assert.equal(state.musicPlaylist[2].name, 'Kullanıcı sesi 3');
   const invalid = await fetch(base + '/api/music', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slot: 4, dataUrl: 'data:audio/mpeg;base64,' + audioData })
+    body: JSON.stringify({ slot: 5, dataUrl: 'data:audio/mpeg;base64,' + audioData })
   });
   assert.equal(invalid.status, 400);
   await post('music-default');
   state = await getState();
-  assert.equal(state.musicPlaylist.filter(song => song.url).length, 0);
-  assert.equal(state.musicUrl, '');
+  assert.deepEqual(state.musicPlaylist.map(song => song.url), ['/music/default-1.m4a','/music/default-2.m4a','/music/default-3.m4a','/music/default-4.m4a']);
+  assert.equal(state.musicUrl, '/music/default-1.m4a');
 });
 
 test('music and effect volumes are separate and validated',async()=>{
@@ -245,10 +247,12 @@ test('stream-safety layout options are stored and shared, unknown keys ignored',
   await post('layout',{facecam:false,emblem:false});
 });
 
-test('no third-party audio is bundled with the project', async()=>{
-  const fs=await import('node:fs');
-  assert.equal(fs.existsSync('public/music'),false);
+test('bundled four-song soundtrack is served in order', async()=>{
   const s=await getState();
-  assert.ok((s.musicPlaylist||[]).every(t=>!t.url||t.url.startsWith('/music-custom')),'varsayılan liste boş, yalnızca yüklenen dosyalar');
+  assert.deepEqual(s.musicPlaylist.map(t=>t.url), ['/music/default-1.m4a','/music/default-2.m4a','/music/default-3.m4a','/music/default-4.m4a']);
+  for (const song of s.musicPlaylist) {
+    const res=await fetch(base+song.url,{headers:{Range:'bytes=0-15'}});
+    assert.equal(res.status,206);
+    assert.equal(Buffer.from(await res.arrayBuffer()).toString('ascii',4,8),'ftyp');
+  }
 });
-

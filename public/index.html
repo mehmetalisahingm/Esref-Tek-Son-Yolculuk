@@ -157,7 +157,7 @@
         </div>
 
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">♫</div><div><h3>Müzik ve Ses</h3><p>Yayın ekranında (overlay) çalar</p></div></div>
-          <div class="now-playing" id="music-name">♫ Chopin — Cenaze Marşı (varsayılan)</div>
+          <div class="now-playing" id="music-name">♫ Dört şarkı sırayla çalacak</div>
           <div class="playlist-slots">
             <div class="playlist-slot">
               <div class="setting-inline"><label class="input-label" for="music-upload">1. ŞARKI</label><button id="music-slot-1-clear" class="small-button" disabled>Kaldır</button></div>
@@ -175,8 +175,13 @@
               <small id="music-slot-3-name" class="playlist-status">Dosya yüklenmedi</small>
             </div>
           </div>
-          <button id="music-default-btn" class="small-button" disabled>Tümünü kaldır · Varsayılan müzik</button>
-          <p class="setting-note">Kullanma hakkın olan MP3 / M4A / OGG / WAV dosyalarını sırayla yükle (her biri en fazla 15 MB); <b>1 → 2 → 3 → 1</b> döner, boş yuvalar atlanır, hiç dosya yoksa telifsiz Chopin sentezi çalar. Dosyalar yalnızca bu bilgisayarda kalır. <b>Dizi müziği veya YouTube'dan indirilmiş ses kullanma</b>; TikTok telifli sesi tanıyıp yayını kısıtlayabilir. Telifsiz müzik: YouTube Ses Kitaplığı, Pixabay Music.</p>
+          <div class="playlist-slot">
+            <div class="setting-inline"><label class="input-label" for="music-upload-4">4. ŞARKI</label><button id="music-slot-4-clear" class="small-button" disabled>Kaldır</button></div>
+            <input id="music-upload-4" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
+            <small id="music-slot-4-name" class="playlist-status">Dosya yüklenmedi</small>
+          </div>
+          <button id="music-default-btn" class="small-button" disabled>Dört şarkılık listeye dön</button>
+          <p class="setting-note">Dört şarkı sırayla çalar; her yuvaya farklı bir MP3 / M4A / OGG / WAV dosyası da yükleyebilirsin (en fazla 15 MB). Yayın için gerekli müzik haklarını kontrol et.</p>
           <div class="toggle-row">
             <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Müzik</label>
             <label class="switch"><input type="checkbox" id="sfx-toggle" checked><span></span>Efektler</label>

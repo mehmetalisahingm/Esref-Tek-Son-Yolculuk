@@ -22,10 +22,12 @@ const savedMusic = MUSIC_EXTS.find(ext => existsSync(path.join(PUBLIC, `music-cu
 const musicNameFile = path.join(PUBLIC, 'music-custom.name.txt');
 let savedMusicName = '';
 try { savedMusicName = savedMusic ? (await fs.readFile(musicNameFile, 'utf8')).slice(0, 80) : ''; } catch {}
-// Playlist slots are stored locally; never commit or fetch audio from YouTube.
-const savedPlaylist = [
+// Bundled tracks are the default; uploads override them without modifying the repository.
+const bundledPlaylist = ['Ahmet Kaya - Karayazı', 'Ahmet Kaya - Ağladıkça', 'Azer Bülbül - Bu Gece Karakolluk Olabilirim', 'Müslüm Gürses - Nilüfer']
+  .map((name, i) => ({ url: `/music/default-${i + 1}.m4a`, name }));
+const uploadedPlaylist = [
   { url: savedMusic ? `/music-custom.${savedMusic}` : '', name: savedMusic ? (savedMusicName || 'Yüklenen şarkı') : '' },
-  ...await Promise.all([2, 3].map(async slot => {
+  ...await Promise.all([2, 3, 4].map(async slot => {
     const stem = `music-custom-${slot}`;
     const ext = MUSIC_EXTS.find(x => existsSync(path.join(PUBLIC, `${stem}.${x}`)));
     if (!ext) return { url: '', name: '' };
@@ -34,6 +36,7 @@ const savedPlaylist = [
     return { url: `/${stem}.${ext}`, name: name || `Şarkı ${slot}` };
   })),
 ];
+const savedPlaylist = uploadedPlaylist.some(t => t.url) ? uploadedPlaylist : bundledPlaylist.map(t => ({ ...t }));
 // Identify an uploaded audio file by its first bytes rather than trusting the browser's MIME type.
 function sniffAudio(b) {
   if (b.length < 12) return null;
@@ -411,7 +414,7 @@ const server = http.createServer(async (req, res) => {
         }
         case '/api/music': {
           const slot = body.slot === undefined ? 1 : Number(body.slot);
-          if (!Number.isInteger(slot) || slot < 1 || slot > 3) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
+          if (!Number.isInteger(slot) || slot < 1 || slot > 4) return respond(res, 400, { error: 'Şarkı sırası 1–4 olmalı' });
           const match = /^data:[\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
           if (!match) return respond(res, 400, { error: 'Şarkı dosyası okunamadı' });
           const data = Buffer.from(match[1], 'base64');
@@ -432,15 +435,16 @@ const server = http.createServer(async (req, res) => {
         }
         case '/api/music-default': {
           const slot = body.slot === undefined ? null : Number(body.slot);
-          if (slot !== null && (!Number.isInteger(slot) || slot < 1 || slot > 3)) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
-          const slots = slot === null ? [1, 2, 3] : [slot];
+          if (slot !== null && (!Number.isInteger(slot) || slot < 1 || slot > 4)) return respond(res, 400, { error: 'Şarkı sırası 1–4 olmalı' });
+          const slots = slot === null ? [1, 2, 3, 4] : [slot];
           await Promise.all(slots.flatMap(n => {
             const stem = n === 1 ? 'music-custom' : `music-custom-${n}`;
             return [...MUSIC_EXTS.map(ext => `${stem}.${ext}`), `${stem}.name.txt`]
               .map(file => fs.unlink(path.join(PUBLIC, file)).catch(() => {}));
           }));
-          for (const n of slots) state.musicPlaylist[n - 1] = { url: '', name: '' };
-          if (slot === null || slot === 1) { state.musicUrl = ''; state.musicName = ''; }
+          if (slot === null) state.musicPlaylist = bundledPlaylist.map(t => ({ ...t }));
+          else state.musicPlaylist[slot - 1] = { url: '', name: '' };
+          if (slot === null || slot === 1) { state.musicUrl = state.musicPlaylist[0].url; state.musicName = state.musicPlaylist[0].name; }
           event('info', 'MÜZİK', slot === null ? 'Varsayılan müziğe dönüldü' : `${slot}. sıradaki şarkı kaldırıldı`); emit();
           return respond(res, 200, { ok: true, musicPlaylist: state.musicPlaylist });
         }

@@ -279,9 +279,9 @@ function updateAudioPanel(s) {
   $('#music-toggle').checked = s.audio.music; $('#sfx-toggle').checked = s.audio.sfx;
   const slots = Array.isArray(s.musicPlaylist) ? s.musicPlaylist : [{ url: s.musicUrl, name: s.musicName }];
   const active = slots.filter(track => track?.url);
-  text('#music-name', active.length ? `♫ ${active.length} şarkı sırayla döngüde çalacak (1 → 2 → 3 → 1)` : '♫ Chopin — Cenaze Marşı (varsayılan)');
+  text('#music-name', active.length ? `♫ ${active.length} şarkı sırayla döngüde çalacak (1 → 2 → 3 → 4 → 1)` : '♫ Müzik kapalı');
   $('#music-default-btn').disabled = !active.length;
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 4; i++) {
     const item = slots[i - 1];
     text(`#music-slot-${i}-name`, item?.url ? `✓ ${item.name || i + '. Şarkı'}` : 'Dosya yüklenmedi');
     $(`#music-slot-${i}-clear`).disabled = !item?.url;
@@ -393,7 +393,7 @@ for (const [id, key] of volumeSliders) {
   $(id).addEventListener('input', () => { text(`${id}-value`, `${$(id).value}%`); clearTimeout(timer); timer = setTimeout(wrap(() => api('audio', { [key]: Number($(id).value) / 100 })), 120); });
 }
 // Each slot is independent; the audio player only advances when a track ends.
-for (let slot = 1; slot <= 3; slot++) {
+for (let slot = 1; slot <= 4; slot++) {
   const input = $(slot === 1 ? '#music-upload' : `#music-upload-${slot}`);
   input.addEventListener('change', wrap(async () => {
     const file = input.files?.[0]; if (!file) return;
@@ -411,7 +411,7 @@ for (let slot = 1; slot <= 3; slot++) {
     showToast(`♫ ${slot}. şarkı kaldırıldı`);
   });
 }
-on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Varsayılan müziğe dönüldü'); });
+on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Dört şarkılık listeye dönüldü'); });
 for (const key of ['fanNote', 'facecam', 'emblem']) $(`#layout-${key}`).addEventListener('change', wrap(() => api('layout', { [key]: $(`#layout-${key}`).checked })));
 $('#preview-toggle').addEventListener('change', () => { previewOn = $('#preview-toggle').checked; if (previewOn) unlock(); configureAudio(); });
 $('#copy-overlay').addEventListener('click', async () => { try { await navigator.clipboard.writeText(`${location.origin}/?overlay=1`); showToast('📋 Overlay adresi kopyalandı'); } catch { showToast(`${location.origin}/?overlay=1`); } });
