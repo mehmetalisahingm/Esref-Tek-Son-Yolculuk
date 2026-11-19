@@ -19,6 +19,22 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 - **Işıltı:** mumlar, fenerler ve altın detaylar yumuşakça parlar. Zayıf bilgisayarda `&nobloom=1` ile kapatılabilir.
 - **Sağlamlık:** 3D motoru yerelden sunulur (CDN gerekmez), bağlantı koparsa otomatik yeniden bağlanır, yayın bitince durur.
 
+## Üç parçalık sıralı müzik döngüsü
+
+Kontrol paneli → **Müzik ve Ses** alanında kullanıcı tarafından verilen üç YouTube Shorts referansı listelenir:
+
+1. https://youtube.com/shorts/GFqF4v7H0hE
+2. https://youtube.com/shorts/FxYN7qI83k4
+3. https://youtube.com/shorts/pl-jrOZ1jEM
+
+Bu bağlantılardan ses otomatik indirilmez, çekilmez veya arka planda saklı YouTube oynatıcısıyla çalınmaz. Kullanma hakkın olan üç ses dosyasını MP3, M4A, OGG veya WAV olarak sırasıyla **1 / 2 / 3** alanlarına yükle. Her dosya en fazla 15 MB olabilir. Böylece yayın ekranında **1 → 2 → 3 → 1** döngüsü çalışır. Boş yuvalar atlanır; her ses bittiğinde sonraki başlar. Yüklü ses yoksa önceki Chopin sentezi çalar.
+
+- Yerel dosyalar `public/music-custom.*`, `public/music-custom-2.*`, `public/music-custom-3.*` olarak saklanır. Git'e yüklenmezler.
+- Oyun sunucusunu yeniden başlatsan bile yüklenen sesler kullanılabilir.
+- Şarkı eklemek/çıkarmak, hediye seslerini ve ayrı ses ayarlarını etkilemez.
+- OBS'de yayın sesinin etkin olduğundan emin ol. Tarayıcı otomatik oynatmayı engellerse ses başlatma düğmesini bir kez kullan.
+- YouTube'un sesini videodan ayırıp gizli audio-only player ile çalmak uygun bir yöntem değildir; ayrıca müziklerin TikTok yayın hakları gerekir. Hak sahibi izni olmadan telifli ses kullanmak yayın sesinin kapanmasına yol açabilir.
+
 ## Windows'ta 1 dakikada çalıştır
 
 1. Bilgisayarında **Node.js 20+** kurulu olsun.
