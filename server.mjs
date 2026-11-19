@@ -22,11 +22,8 @@ const savedMusic = MUSIC_EXTS.find(ext => existsSync(path.join(PUBLIC, `music-cu
 const musicNameFile = path.join(PUBLIC, 'music-custom.name.txt');
 let savedMusicName = '';
 try { savedMusicName = savedMusic ? (await fs.readFile(musicNameFile, 'utf8')).slice(0, 80) : ''; } catch {}
-// Uploaded tracks override the bundled playlist and stay local.
-const bundledPlaylist = ['GFqF4v7H0hE', 'FxYN7qI83k4', 'pl-jrOZ1jEM'].map((id, i) => ({
-  url: `/music/shorts-${i + 1}.m4a`, name: `YouTube Shorts ${i + 1} - ${id}`,
-}));
-const uploadedPlaylist = [
+// Playlist slots are stored locally; never commit or fetch audio from YouTube.
+const savedPlaylist = [
   { url: savedMusic ? `/music-custom.${savedMusic}` : '', name: savedMusic ? (savedMusicName || 'Yüklenen şarkı') : '' },
   ...await Promise.all([2, 3].map(async slot => {
     const stem = `music-custom-${slot}`;
@@ -37,7 +34,6 @@ const uploadedPlaylist = [
     return { url: `/${stem}.${ext}`, name: name || `Şarkı ${slot}` };
   })),
 ];
-const savedPlaylist = uploadedPlaylist.some(track => track.url) ? uploadedPlaylist : bundledPlaylist.map(track => ({ ...track }));
 // Identify an uploaded audio file by its first bytes rather than trusting the browser's MIME type.
 function sniffAudio(b) {
   if (b.length < 12) return null;
@@ -435,9 +431,8 @@ const server = http.createServer(async (req, res) => {
             return [...MUSIC_EXTS.map(ext => `${stem}.${ext}`), `${stem}.name.txt`]
               .map(file => fs.unlink(path.join(PUBLIC, file)).catch(() => {}));
           }));
-          if (slot === null) state.musicPlaylist = bundledPlaylist.map(track => ({ ...track }));
-          else state.musicPlaylist[slot - 1] = { url: '', name: '' };
-          if (slot === null || slot === 1) { state.musicUrl = state.musicPlaylist[0].url; state.musicName = state.musicPlaylist[0].name; }
+          for (const n of slots) state.musicPlaylist[n - 1] = { url: '', name: '' };
+          if (slot === null || slot === 1) { state.musicUrl = ''; state.musicName = ''; }
           event('info', 'MÜZİK', slot === null ? 'Varsayılan müziğe dönüldü' : `${slot}. sıradaki şarkı kaldırıldı`); emit();
           return respond(res, 200, { ok: true, musicPlaylist: state.musicPlaylist });
         }

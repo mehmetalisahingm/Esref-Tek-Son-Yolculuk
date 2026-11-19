@@ -158,7 +158,7 @@ test('an uploaded song is validated, served with byte ranges and can be removed'
   assert.equal(bad.status,400);
   await post('music-default');
   s=await getState();
-  assert.equal(s.musicUrl,'/music/shorts-1.m4a');
+  assert.equal(s.musicUrl,'');
 });
 
 test('ordered playlist cycles 1 -> 2 -> 3 -> 1 and skips empty slots', () => {
@@ -173,7 +173,6 @@ test('ordered playlist cycles 1 -> 2 -> 3 -> 1 and skips empty slots', () => {
   assert.equal(nextTrackIndex(2, 3), 0);
   assert.equal(nextTrackIndex(0, 0), -1);
   assert.deepEqual(playlistUrls([{ url: 'https://youtube.com/shorts/example' }]), []);
-  assert.deepEqual(playlistUrls([{url:'/music/shorts-1.m4a'},{url:'/music/shorts-2.m4a'},{url:'/music/shorts-3.m4a'}]), ['/music/shorts-1.m4a','/music/shorts-2.m4a','/music/shorts-3.m4a']);
 });
 
 test('three upload slots persist as ordered state, serve audio and clear independently', async () => {
@@ -206,13 +205,8 @@ test('three upload slots persist as ordered state, serve audio and clear indepen
   assert.equal(invalid.status, 400);
   await post('music-default');
   state = await getState();
-  assert.deepEqual(state.musicPlaylist.map(song => song.url), ['/music/shorts-1.m4a','/music/shorts-2.m4a','/music/shorts-3.m4a']);
-  assert.equal(state.musicUrl, '/music/shorts-1.m4a');
-  for (const song of state.musicPlaylist) {
-    const res = await fetch(base + song.url, { headers: { Range: 'bytes=0-15' } });
-    assert.equal(res.status, 206);
-    assert.equal(Buffer.from(await res.arrayBuffer()).toString('ascii', 4, 8), 'ftyp');
-  }
+  assert.equal(state.musicPlaylist.filter(song => song.url).length, 0);
+  assert.equal(state.musicUrl, '');
 });
 
 test('music and effect volumes are separate and validated',async()=>{

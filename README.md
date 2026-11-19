@@ -2,13 +2,13 @@
 
 Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. En çok beğeni atan altı izleyici tabutu, en çok hediye gönderen izleyici fotoğrafı taşır. Yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir.
 
-Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir.
+Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir. Dizi müziği ve video görüntüsü kullanılmaz; arka plan müziği kamu malı bir eserin canlı sentezidir.
 
 ## Sürüm 2.0'da neler var
 
 - **Sinematik 3D sahne:** alacakaranlık gökyüzü, ay, uzakta cami siluetli şehir, selvi ağaçları, fenerler, sis, süzülen gül yaprakları ve yeşil örtülü, altın işlemeli tabut.
 - **Kendi şarkın:** kontrol panelinden MP3 / M4A / OGG / WAV yükle (en fazla 15 MB). Overlay döngüde çalar, hediye ve taht duyurularında kısa süre kısar. Ana ses, müzik ve efekt seviyeleri ayrı ayarlanır. Dosya yalnızca bilgisayarda (`public/music-custom.*`) kalır, repoya gitmez. Telifli şarkıları TikTok canlı yayında sessize alabilir.
-- **Varsayılan müzik:** kullanıcı tarafından seçilen üç ses dosyası sırayla çalar. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
+- **Varsayılan müzik:** şarkı yüklenmezse Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
 - **Yorum balonları:** yorum yazan izleyicinin sözü 7 saniye boyunca sahnede kendi karakterinin üstünde görünür.
 - **Takip = mum:** takip eden izleyicinin karakteri elinde yanan mumla yürür. Beğeniler tabut taşıma sıralamasını belirler; her 1.000 beğenide kutlama olur.
 - **Hediye alarmları:** altın bant, parıltı patlaması ve gül yağmuru. Büyük hediyeler daha büyük gösterilir.
@@ -27,7 +27,7 @@ Kontrol paneli → **Müzik ve Ses** alanında kullanıcı tarafından verilen �
 2. https://youtube.com/shorts/FxYN7qI83k4
 3. https://youtube.com/shorts/pl-jrOZ1jEM
 
-Üç ses `public/music/` klasöründe projeyle birlikte gelir ve 1 → 2 → 3 → 1 sırasıyla çalar. Kontrol panelinden farklı MP3, M4A, OGG veya WAV dosyaları yükleyebilirsin (her biri en fazla 15 MB); **Üç orijinal müziğe dön** düğmesi paketlenmiş listeyi geri getirir. Boş yuvalar atlanır.
+Bu bağlantılardan ses otomatik indirilmez, çekilmez veya arka planda saklı YouTube oynatıcısıyla çalınmaz. Kullanma hakkın olan üç ses dosyasını MP3, M4A, OGG veya WAV olarak sırasıyla **1 / 2 / 3** alanlarına yükle. Her dosya en fazla 15 MB olabilir. Böylece yayın ekranında **1 → 2 → 3 → 1** döngüsü çalışır. Boş yuvalar atlanır; her ses bittiğinde sonraki başlar. Yüklü ses yoksa önceki Chopin sentezi çalar.
 
 - Yerel dosyalar `public/music-custom.*`, `public/music-custom-2.*`, `public/music-custom-3.*` olarak saklanır. Git'e yüklenmezler.
 - Oyun sunucusunu yeniden başlatsan bile yüklenen sesler kullanılabilir.
