@@ -3,10 +3,10 @@ export function createScene(canvas, labelsRoot, T) {
   const SPEED = .85;           // world units per second the road scrolls under the procession
   const PORTRAIT_Z = 4.4;      // the portrait bearer walks well ahead so the frame never hides the coffin
   const MAX_CROWD = 60;
-  const HUD_BOTTOM = .125;    // title + status bar cover the top of the frame
+  const HUD_BOTTOM = .15;     // title, status bar and fan note cover the top of the frame
   const SHIFT_X = .12;        // the procession sits left of centre, clear of the cards on the right
   // Screen areas (fractions of the frame) covered by the overlay UI: names are not drawn there.
-  const blocked = (fx, fy) => fy < HUD_BOTTOM || (fx > .52 && fy < .32) || (fx > .76 && fy < .70);
+  const blocked = (fx, fy) => fy < HUD_BOTTOM || (fx > .52 && fy < .34) || (fx > .76 && fy < .72) || (fx > .72 && fy > .68 && fy < .9);
 
   // ——— Renderer & scene ———
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });

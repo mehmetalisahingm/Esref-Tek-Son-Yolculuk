@@ -2,13 +2,13 @@
 
 Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. En çok beğeni atan altı izleyici tabutu, en çok hediye gönderen izleyici fotoğrafı taşır. Yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir.
 
-Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir.
+Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir. Dizi müziği ve video görüntüsü kullanılmaz; arka plan müziği kamu malı bir eserin canlı sentezidir.
 
 ## Sürüm 2.0'da neler var
 
 - **Sinematik 3D sahne:** alacakaranlık gökyüzü, ay, uzakta cami siluetli şehir, selvi ağaçları, fenerler, sis, süzülen gül yaprakları ve yeşil örtülü, altın işlemeli tabut.
 - **Kendi şarkın:** kontrol panelinden MP3 / M4A / OGG / WAV yükle (en fazla 15 MB). Overlay döngüde çalar, hediye ve taht duyurularında kısa süre kısar. Ana ses, müzik ve efekt seviyeleri ayrı ayarlanır. Dosya yalnızca bilgisayarda (`public/music-custom.*`) kalır, repoya gitmez. Telifli şarkıları TikTok canlı yayında sessize alabilir.
-- **Varsayılan müzik:** kullanıcı tarafından seçilen üç ses dosyası sırayla çalar. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
+- **Varsayılan müzik:** şarkı yüklenmezse Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
 - **Yorum balonları:** yorum yazan izleyicinin sözü 7 saniye boyunca sahnede kendi karakterinin üstünde görünür.
 - **Takip = mum:** takip eden izleyicinin karakteri elinde yanan mumla yürür. Beğeniler tabut taşıma sıralamasını belirler; her 1.000 beğenide kutlama olur.
 - **Hediye alarmları:** altın bant, parıltı patlaması ve gül yağmuru. Büyük hediyeler daha büyük gösterilir.
@@ -21,13 +21,9 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 
 ## Üç parçalık sıralı müzik döngüsü
 
-Kontrol paneli → **Müzik ve Ses** alanında kullanıcı tarafından verilen üç YouTube Shorts referansı listelenir:
+Kontrol paneli → **Müzik ve Ses** alanında üç şarkı yuvası vardır.
 
-1. https://youtube.com/shorts/GFqF4v7H0hE
-2. https://youtube.com/shorts/FxYN7qI83k4
-3. https://youtube.com/shorts/pl-jrOZ1jEM
-
-Üç ses `public/music/` klasöründe projeyle birlikte gelir ve 1 → 2 → 3 → 1 sırasıyla çalar. Kontrol panelinden farklı MP3, M4A, OGG veya WAV dosyaları yükleyebilirsin (her biri en fazla 15 MB); **Üç orijinal müziğe dön** düğmesi paketlenmiş listeyi geri getirir. Boş yuvalar atlanır.
+Kullanma hakkın olan (telifsiz ya da lisanslı) üç ses dosyasını MP3, M4A, OGG veya WAV olarak sırasıyla **1 / 2 / 3** alanlarına yükle. Her dosya en fazla 15 MB olabilir. Böylece yayın ekranında **1 → 2 → 3 → 1** döngüsü çalışır. Boş yuvalar atlanır; her ses bittiğinde sonraki başlar. Yüklü ses yoksa telifsiz Chopin sentezi çalar. **Dizi müziklerini veya YouTube'dan indirilmiş sesleri kullanma:** TikTok telifli sesi tanıyınca yayını kısıtlayabilir, repoya konursa GitHub'dan da kaldırılabilir. Telifsiz müzik için YouTube Ses Kitaplığı veya Pixabay Music kullanılabilir.
 
 - Yerel dosyalar `public/music-custom.*`, `public/music-custom-2.*`, `public/music-custom-3.*` olarak saklanır. Git'e yüklenmezler.
 - Oyun sunucusunu yeniden başlatsan bile yüklenen sesler kullanılabilir.
@@ -74,6 +70,8 @@ Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve iz
 **Sunucu penceresi:** gelen her olay siyah sunucu penceresine yazılır (`[olay] 💬 @ali: selam`, `[olay] ❤️ @veli +15`), bağlantı durumu da (`[köprü] CONNECTED …`). Yayında kimse oyuna düşmüyorsa önce buraya bak: hiç `[olay]` satırı yoksa TikTok'tan bir şey gelmiyordur. Açılışta "❌ TikTok bağlayıcısı kurulu değil" yazıyorsa klasörde `npm install` çalıştır.
 
 **Otomatik yeniden bağlanma:** bir kez "Yayına Bağlan" dedikten sonra sunucuyu yeniden başlatınca (ör. `git pull` sonrası) köprü son yayına kendiliğinden bağlanır. "Bağlantıyı kes"e basarsan bu kapanır. Köprü bağlı değilken yayın ekranının sol üstünde kırmızı "TikTok bağlı değil" uyarısı görünür.
+
+**TikTok kurallarına uyum (panel → "TikTok Kurallarına Uyum"):** yayın ekranında "kurgusal karakter · hayran oyunu" notu (varsayılan açık), sağ altta kamera alanı ve gerçek fotoğraf yerine "ET" amblemi seçenekleri vardır. TikTok yayıncının kamerada olmasını bekler; oyunun tek başına döndüğü yayınları, telifli müziği ve yanıltıcı içeriği kısıtlayabilir.
 
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
@@ -133,7 +131,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 38 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 40 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 

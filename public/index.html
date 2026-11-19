@@ -50,7 +50,9 @@
               <div class="throne-points"><b id="holder-points">—</b><small>hediye</small></div>
               <div class="throne-points candles"><b>🕯️<span id="candle-total">0</span></b><small>mum</small></div>
             </div>
+            <div class="fan-note" id="fan-note">ℹ️ Eşref Rüya dizisindeki <b>kurgusal</b> karakter için hayran oyunu · gerçek bir ölüm değildir</div>
           </div>
+          <div class="facecam" id="facecam" aria-hidden="true"><span>📷 KAMERA</span></div>
 
           <div class="bridge-warn" id="bridge-warn" hidden></div>
           <div class="alert-lane" id="alerts" aria-live="polite"></div>
@@ -63,7 +65,7 @@
               <span class="takeover-kicker" id="takeover-kicker">👑 YENİ FOTOĞRAF TAŞIYICISI</span>
               <div class="takeover-photo"><b class="portrait-monogram">ET</b><img id="takeover-photo" alt="" referrerpolicy="no-referrer"><i class="sheen"></i><i class="ribbon"></i><span>EŞREF TEK</span></div>
               <strong id="takeover-name">@isim</strong>
-              <span id="takeover-detail">Eşref Tek'in fotoğrafı artık onun ellerinde</span><span class="takeover-cta" id="takeover-cta"></span>
+              <span id="takeover-detail">Eşref Tek'in fotoğrafı artık onun ellerinde</span><small class="takeover-note">Kurgusal dizi karakteri · hayran oyunu</small><span class="takeover-cta" id="takeover-cta"></span>
             </div>
           </div>
 
@@ -145,27 +147,36 @@
           <div class="quick-actions"><button id="demo-chat-btn" class="small-button">+10 izleyici</button><button id="demo-gift-btn" class="small-button">+ Rastgele hediye</button><button id="demo-btn" class="small-button">Demo sahnesi</button><button id="reset-btn" class="small-button danger">Temizle</button></div>
         </div>
 
+        <div class="panel"><div class="panel-heading"><div class="panel-icon green">🛡️</div><div><h3>TikTok Kurallarına Uyum</h3><p>Kısıtlama riskini azaltan ayarlar</p></div></div>
+          <div class="toggle-row column">
+            <label class="switch"><input type="checkbox" id="layout-fanNote" checked><span></span>"Kurgusal karakter · hayran oyunu" notunu göster</label>
+            <label class="switch"><input type="checkbox" id="layout-facecam"><span></span>Sağ altta kamera alanı aç</label>
+            <label class="switch"><input type="checkbox" id="layout-emblem"><span></span>Gerçek fotoğraf yerine "ET" amblemi göster</label>
+          </div>
+          <p class="setting-note">TikTok, yayıncının kamerada olup izleyicilerle konuşmasını bekliyor; oyunun tek başına döndüğü, kayıt gibi görünen yayınları kısıtlayabiliyor. Kamera alanını açınca LIVE Studio'da kameranı bu çerçevenin üstüne yerleştir. Gerçek bir oyuncunun yas çerçeveli fotoğrafı "gerçek ölüm" sanılıp yanıltıcı bulunabilir ve fotoğrafın hakları sana ait değilse şikâyet alabilir; amblem bu riski kaldırır. Telifli müzik kullanma, hediyeyi bağış gibi isteme, 18 yaş altını hediyeye yönlendirme.</p>
+        </div>
+
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">♫</div><div><h3>Müzik ve Ses</h3><p>Yayın ekranında (overlay) çalar</p></div></div>
-          <div class="now-playing" id="music-name">♫ Üç müzik sırayla çalacak</div>
+          <div class="now-playing" id="music-name">♫ Chopin — Cenaze Marşı (varsayılan)</div>
           <div class="playlist-slots">
             <div class="playlist-slot">
-              <div class="setting-inline"><label class="input-label" for="music-upload">1. SES · <a href="https://youtube.com/shorts/GFqF4v7H0hE" target="_blank" rel="noopener noreferrer">YouTube referansı 1</a></label><button id="music-slot-1-clear" class="small-button" disabled>Kaldır</button></div>
+              <div class="setting-inline"><label class="input-label" for="music-upload">1. ŞARKI</label><button id="music-slot-1-clear" class="small-button" disabled>Kaldır</button></div>
               <input id="music-upload" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
               <small id="music-slot-1-name" class="playlist-status">Dosya yüklenmedi</small>
             </div>
             <div class="playlist-slot">
-              <div class="setting-inline"><label class="input-label" for="music-upload-2">2. SES · <a href="https://youtube.com/shorts/FxYN7qI83k4" target="_blank" rel="noopener noreferrer">YouTube referansı 2</a></label><button id="music-slot-2-clear" class="small-button" disabled>Kaldır</button></div>
+              <div class="setting-inline"><label class="input-label" for="music-upload-2">2. ŞARKI</label><button id="music-slot-2-clear" class="small-button" disabled>Kaldır</button></div>
               <input id="music-upload-2" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
               <small id="music-slot-2-name" class="playlist-status">Dosya yüklenmedi</small>
             </div>
             <div class="playlist-slot">
-              <div class="setting-inline"><label class="input-label" for="music-upload-3">3. SES · <a href="https://youtube.com/shorts/pl-jrOZ1jEM" target="_blank" rel="noopener noreferrer">YouTube referansı 3</a></label><button id="music-slot-3-clear" class="small-button" disabled>Kaldır</button></div>
+              <div class="setting-inline"><label class="input-label" for="music-upload-3">3. ŞARKI</label><button id="music-slot-3-clear" class="small-button" disabled>Kaldır</button></div>
               <input id="music-upload-3" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
               <small id="music-slot-3-name" class="playlist-status">Dosya yüklenmedi</small>
             </div>
           </div>
-          <button id="music-default-btn" class="small-button" disabled>Üç orijinal müziğe dön</button>
-          <p class="setting-note">Üç müzik projeyle birlikte gelir ve <b>1 → 2 → 3 → 1</b> olarak döner. İstersen farklı MP3 / M4A / OGG / WAV dosyaları yükleyebilirsin (her biri en fazla 15 MB); yüklediğin dosyalar bilgisayarında saklanır.</p>
+          <button id="music-default-btn" class="small-button" disabled>Tümünü kaldır · Varsayılan müzik</button>
+          <p class="setting-note">Kullanma hakkın olan MP3 / M4A / OGG / WAV dosyalarını sırayla yükle (her biri en fazla 15 MB); <b>1 → 2 → 3 → 1</b> döner, boş yuvalar atlanır, hiç dosya yoksa telifsiz Chopin sentezi çalar. Dosyalar yalnızca bu bilgisayarda kalır. <b>Dizi müziği veya YouTube'dan indirilmiş ses kullanma</b>; TikTok telifli sesi tanıyıp yayını kısıtlayabilir. Telifsiz müzik: YouTube Ses Kitaplığı, Pixabay Music.</p>
           <div class="toggle-row">
             <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Müzik</label>
             <label class="switch"><input type="checkbox" id="sfx-toggle" checked><span></span>Efektler</label>

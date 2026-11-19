@@ -105,7 +105,7 @@ export function createFallback(canvas,labelsRoot){
     ctx.fillStyle='#654927';ctx.fillRect(X-bw/2-6*sc,Y-bh/2-6*sc,bw+12*sc,bh+12*sc);
     ctx.fillStyle='#f1c87a';ctx.fillRect(X-bw/2-3*sc,Y-bh/2-3*sc,bw+6*sc,bh+6*sc);
     ctx.fillStyle='#151d1a';ctx.fillRect(X-bw/2,Y-bh/2,bw,bh);
-    if(portraitLoaded){const iw=portrait.naturalWidth,ih=portrait.naturalHeight,tw=bw-6*sc,th=bh-27*sc,r=Math.max(tw/iw,th/ih),sw=tw/r,sh=th/r;ctx.drawImage(portrait,(iw-sw)/2,(ih-sh)*.15,sw,sh,X-bw/2+3*sc,Y-bh/2+3*sc,tw,th);}
+    if(portraitLoaded&&!state.layout?.emblem){const iw=portrait.naturalWidth,ih=portrait.naturalHeight,tw=bw-6*sc,th=bh-27*sc,r=Math.max(tw/iw,th/ih),sw=tw/r,sh=th/r;ctx.drawImage(portrait,(iw-sw)/2,(ih-sh)*.15,sw,sh,X-bw/2+3*sc,Y-bh/2+3*sc,tw,th);}
     else{ctx.textAlign='center';ctx.fillStyle='#f3e0b3';ctx.font=`${Math.max(9,12*sc)}px Georgia,serif`;ctx.fillText('EŞREF TEK',X,Y-5*sc)}
     ctx.fillStyle='#0e1f19';ctx.fillRect(X-bw/2,Y+bh/2-24*sc,bw,24*sc);
     ctx.fillStyle='#f7d99a';ctx.textAlign='center';ctx.font=`bold ${Math.max(9,13*sc)}px Georgia,serif`;
