@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "three": "0.170.0",
-    "ws": "^8.18.0"
-  },
-  "optionalDependencies": {
+    "ws": "^8.18.0",
     "tiktok-live-connector": "^2.5.0"
   },
-  "engines": {"node": ">=20"}
+  "engines": {
+    "node": ">=20"
+  }
 }

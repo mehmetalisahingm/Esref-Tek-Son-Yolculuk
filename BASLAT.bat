@@ -6,9 +6,19 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-if not exist "node_modules\three" (
-  echo Ilk kurulum: 3D motoru ve TikTok baglayicisi indiriliyor...
+set NEED_INSTALL=0
+if not exist "node_modules\three" set NEED_INSTALL=1
+if not exist "node_modules\tiktok-live-connector" set NEED_INSTALL=1
+if not exist "node_modules\ws" set NEED_INSTALL=1
+if "%NEED_INSTALL%"=="1" (
+  echo Paketler kuruluyor: 3D motoru ve TikTok baglayicisi...
   call npm install
+  if errorlevel 1 (
+    echo.
+    echo HATA: npm install basarisiz oldu. Internet baglantini kontrol edip tekrar dene.
+    pause
+    exit /b 1
+  )
 )
 start "Son Yolculuk Sunucusu" cmd /k "node server.mjs"
 timeout /t 2 /nobreak >nul

@@ -256,6 +256,11 @@ function updateStatus(s) {
   const unk = Object.entries(b.unknown || {});
   $('#diag-unknown').hidden = !unk.length;
   text('#diag-unknown', unk.length ? `Tanınmayan olaylar: ${unk.map(([k, n]) => `${k}×${n}`).join(', ')}` : '');
+  // Visible on the stream preview too, so a dead bridge is noticed immediately.
+  const warn = $('#bridge-warn');
+  const showWarn = !s.demo && b.state !== 'connected';
+  warn.hidden = !showWarn;
+  if (showWarn) warn.textContent = b.state === 'waiting' ? '⏳ Yayın bekleniyor, açılınca bağlanacak' : ['connecting', 'reconnecting'].includes(b.state) ? '⏳ TikTok\'a bağlanılıyor…' : '⚠ TikTok bağlı değil';
   updateBridgeTimes();
 }
 function updateAudioPanel(s) {

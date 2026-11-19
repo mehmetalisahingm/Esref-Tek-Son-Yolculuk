@@ -71,6 +71,10 @@ Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve iz
 1. [TikFinity](https://tikfinity.zerody.one/)'nin Windows masaüstü uygulamasını aynı bilgisayarda aç, TikTok hesabınla yayınına bağla.
 2. Panelde **TikFinity** sekmesinde adresi `ws://127.0.0.1:21213/` olarak bırak ve bağlan. Bağlıyken 60 saniye olay gelmezse panel uyarır.
 
+**Sunucu penceresi:** gelen her olay siyah sunucu penceresine yazılır (`[olay] 💬 @ali: selam`, `[olay] ❤️ @veli +15`), bağlantı durumu da (`[köprü] CONNECTED …`). Yayında kimse oyuna düşmüyorsa önce buraya bak: hiç `[olay]` satırı yoksa TikTok'tan bir şey gelmiyordur. Açılışta "❌ TikTok bağlayıcısı kurulu değil" yazıyorsa klasörde `npm install` çalıştır.
+
+**Otomatik yeniden bağlanma:** bir kez "Yayına Bağlan" dedikten sonra sunucuyu yeniden başlatınca (ör. `git pull` sonrası) köprü son yayına kendiliğinden bağlanır. "Bağlantıyı kes"e basarsan bu kapanır. Köprü bağlı değilken yayın ekranının sol üstünde kırmızı "TikTok bağlı değil" uyarısı görünür.
+
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
 **Olaylar oyunda ne yapar?**
@@ -129,7 +133,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 34 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 38 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 
