@@ -315,3 +315,4 @@ body.overlay .game-frame{position:fixed;top:0;left:50%;transform:translateX(-50%
 .world-name.crowd .handle{font-size:calc(var(--u)*9.5px)}
 .world-name.carrier .handle em{font-style:normal;color:#ff9aa6;margin-left:calc(var(--u)*3px)}
 .world-name.carrier .handle{max-width:calc(var(--u)*160px)}
+.diag-unknown{margin-top:7px;font-size:11px;color:#e9b96e;word-break:break-word}

@@ -28,6 +28,14 @@ test('connector (v2) events are normalised the same way', () => {
   assert.equal(fromConnector('like', { user: { id: '2', displayId: 'y' }, count: 15 }).count, 15);
 });
 
+test('joins are kept even when TikTok sends the id on the message or only a nickname', () => {
+  assert.deepEqual(fromConnector('member', { userId: '55', user: { nickname: 'Ali' } }).user, { id: '55', name: 'Ali' });
+  assert.deepEqual(fromConnector('anonMember', { nickName: 'Sessiz Kız' }), { type: 'member', user: { id: '', name: 'Sessiz Kız' } });
+  assert.equal(fromConnector('anonMember', { nickName: '***' }), null);
+  assert.equal(fromTikfinity({ event: 'enter', data: { uniqueId: 'a' } }).type, 'member');
+  assert.deepEqual(fromTikfinity({ event: 'yeniTur', data: {} }), { type: 'unknown', kind: 'yenitur' });
+});
+
 test('connection errors become clear Turkish messages with the right retry policy', () => {
   class UserOfflineError extends Error {}
   class SignatureRateLimitError extends Error {}
@@ -123,6 +131,14 @@ test('TikFinity bridge brings comments, joins, follows, likes, gifts and viewers
   assert.ok(s.bridge.lastEventAt > 0);
 });
 
+test('a join with only a nickname still adds the viewer, and unknown event types are reported', async () => {
+  send({ event: 'member', data: { nickname: 'Sessiz Kız' } });
+  send({ event: 'yeniOlay', data: { x: 1 } });
+  const s = await waitFor(x => x.people.some(p => p.name === 'Sessiz Kız') && x.bridge.unknown?.yeniolay);
+  assert.ok(s.people.some(p => p.name === 'Sessiz Kız'), 'sadece takma adı gelen izleyici kortejde');
+  assert.equal(s.bridge.unknown.yeniolay, 1);
+});
+
 test('the bridge notices when TikFinity goes away and retries, and stops on request', async () => {
   sockets.forEach(s => s.destroy()); sockets = [];
   let s = await waitFor(x => x.bridge.state === 'reconnecting');
@@ -160,7 +176,7 @@ function fakeConnector({ offlineTimes = 0 } = {}) {
     async connect() { if (made.length <= offlineTimes) throw new UserOfflineError('User is offline'); return { roomId: '42' }; }
     async disconnect() {}
   }
-  const WebcastEvent = { CHAT: 'chat', MEMBER: 'member', FOLLOW: 'follow', SHARE: 'share', LIKE: 'like', ROOM_USER: 'roomUser', GIFT: 'gift', STREAM_END: 'streamEnd' };
+  const WebcastEvent = { CHAT: 'chat', MEMBER: 'member', UNAUTHORIZED_MEMBER: 'unauthorizedMember', FOLLOW: 'follow', SHARE: 'share', LIKE: 'like', ROOM_USER: 'roomUser', GIFT: 'gift', STREAM_END: 'streamEnd' };
   const ControlEvent = { DISCONNECTED: 'disconnected' };
   return { made, load: async () => ({ TikTokLiveConnection, WebcastEvent, ControlEvent }) };
 }
@@ -173,7 +189,9 @@ test('direct bridge connects with the sign key, forwards events and reconnects a
   assert.equal(fc.made[0].options.signApiKey, 'k-1');
   fc.made[0].emit('chat', { user: { id: '1', displayId: 'ali' }, comment: 'selam' });
   fc.made[0].emit('gift', { user: { id: '2', displayId: 'veli' }, giftId: '5', repeatCount: 1, repeatEnd: true, gift: { name: 'Rose', diamondCount: 1, type: 1 } });
-  assert.deepEqual(events.map(e => e.type), ['chat', 'gift']);
+  fc.made[0].emit('unauthorizedMember', { nickName: 'Gizli İzleyici' });
+  assert.deepEqual(events.map(e => e.type), ['chat', 'gift', 'member']);
+  assert.equal(events[2].user.name, 'Gizli İzleyici');
   fc.made[0].emit('disconnected');
   assert.equal(b.status.state, 'reconnecting');
   b.stop();

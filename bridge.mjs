@@ -12,15 +12,21 @@ const WAIT_FOR_LIVE_MS = 15000;
 //   gift: { id, name, diamonds, repeatCount, repeatEnd, streakable, msgId } }
 
 const str = v => (v === undefined || v === null ? '' : String(v));
-function userFrom(u = {}) {
-  const name = str(u.displayId || u.uniqueId || u.nickname) || 'izleyici';
-  return { id: str(u.id || u.userId || u.displayId || u.uniqueId), name };
+function userFrom(u = {}, msg = {}) {
+  const name = str(u.displayId || u.uniqueId || u.nickname || msg.nickname || msg.uniqueId) || 'izleyici';
+  // Join messages sometimes carry the id on the message itself rather than on the user object.
+  return { id: str(u.id || u.userId || msg.userId || u.displayId || u.uniqueId), name };
 }
 
 // tiktok-live-connector v2 (proto v3) events → normalised events.
 export function fromConnector(type, e = {}) {
-  const user = userFrom(e.user);
+  const user = userFrom(e.user || {}, e);
   switch (type) {
+    // Without a logged-in session TikTok reports joins as "unauthorized members" that only carry a nickname.
+    case 'anonMember': {
+      const nick = str(e.nickName || e.nickname).trim();
+      return nick && !/^[*•.\s]+$/.test(nick) ? { type: 'member', user: { id: '', name: nick } } : null;
+    }
     case 'chat': return { type, user, comment: str(e.comment) };
     case 'member': case 'follow': case 'share': return { type, user };
     case 'like': return { type, user, count: Number(e.count ?? e.likeCount ?? 1) || 1 };
@@ -52,7 +58,7 @@ export function fromTikfinity(raw) {
   const user = { id: str(d.userId || d.uniqueId), name: str(d.uniqueId || d.nickname) || 'izleyici' };
   switch (kind) {
     case 'chat': case 'comment': return { type: 'chat', user, comment: str(d.comment ?? d.message) };
-    case 'member': case 'join': return { type: 'member', user };
+    case 'member': case 'join': case 'enter': case 'memberjoin': case 'viewerjoin': case 'roomenter': return { type: 'member', user };
     case 'follow': return { type: 'follow', user };
     case 'share': return { type: 'share', user };
     case 'social': {
@@ -77,7 +83,8 @@ export function fromTikfinity(raw) {
       },
     };
     case 'streamend': return { type: 'end' };
-    default: return null;
+    case 'config': case 'connected': case 'ping': case 'pong': return null;
+    default: return kind ? { type: 'unknown', kind } : null;
   }
 }
 
@@ -107,7 +114,7 @@ export function explainError(err, username = '') {
 
 // ——— Bridge controller ———
 export function createBridge({ onEvent, onStatus, loadConnector = () => import('tiktok-live-connector'), WebSocketImpl, staleMs = 60000 }) {
-  const status = { mode: 'direct', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, lastEventAt: 0, lastEventType: '', since: 0 };
+  const status = { mode: 'direct', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, unknown: {}, lastEventAt: 0, lastEventType: '', since: 0 };
   let opts = null, wanted = false, transport = null, retryTimer = null, attempt = 0, generation = 0;
   let connectedMessage = '', lastAnyAt = 0, stale = false;
   // An open TikFinity socket does not prove TikFinity is attached to the LIVE, so warn when nothing arrives.
@@ -131,6 +138,11 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
     }
     lastAnyAt = Date.now();
     if (stale) { stale = false; status.message = connectedMessage; }
+    if (ev.type === 'unknown') {
+      // Shown in the panel so a missing event type can be spotted instead of guessed.
+      if (Object.keys(status.unknown).length < 12 || status.unknown[ev.kind]) status.unknown[ev.kind] = (status.unknown[ev.kind] || 0) + 1;
+      onStatus?.(status); return;
+    }
     if (ev.type in status.counts) status.counts[ev.type] += ev.type === 'like' ? (ev.count || 1) : 1;
     if (ev.type !== 'viewers') { status.lastEventAt = Date.now(); status.lastEventType = ev.type; }
     try { onEvent?.(ev); } catch (err) { console.warn('Olay işlenemedi:', err?.message || err); }
@@ -157,7 +169,7 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
       processInitialData: false, enableExtendedGiftInfo: false,
       ...(opts.signApiKey ? { signApiKey: opts.signApiKey } : {}),
     });
-    const map = { [WebcastEvent.CHAT]: 'chat', [WebcastEvent.MEMBER]: 'member', [WebcastEvent.FOLLOW]: 'follow', [WebcastEvent.SHARE]: 'share', [WebcastEvent.LIKE]: 'like', [WebcastEvent.ROOM_USER]: 'viewers', [WebcastEvent.GIFT]: 'gift', [WebcastEvent.STREAM_END]: 'end' };
+    const map = { [WebcastEvent.CHAT]: 'chat', [WebcastEvent.MEMBER]: 'member', ...(WebcastEvent.UNAUTHORIZED_MEMBER ? { [WebcastEvent.UNAUTHORIZED_MEMBER]: 'anonMember' } : {}), [WebcastEvent.FOLLOW]: 'follow', [WebcastEvent.SHARE]: 'share', [WebcastEvent.LIKE]: 'like', [WebcastEvent.ROOM_USER]: 'viewers', [WebcastEvent.GIFT]: 'gift', [WebcastEvent.STREAM_END]: 'end' };
     for (const [evName, type] of Object.entries(map)) conn.on(evName, e => deliver(fromConnector(type, e), gen));
     conn.on(ControlEvent.DISCONNECTED, () => {
       if (gen !== generation || !wanted) return;
@@ -214,7 +226,7 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
     async start(next) {
       opts = { ...next }; wanted = true; attempt = 0;
       status.mode = opts.mode;
-      status.counts = { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 };
+      status.counts = { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }; status.unknown = {};
       status.lastEventAt = 0; status.lastEventType = '';
       return open();
     },
