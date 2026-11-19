@@ -57,7 +57,7 @@ export function createFallback(canvas,labelsRoot){
       ctx.globalAlpha=.2+rand(i+3)*.3;ellipse(p,Math.max(.5,1.5*p.scale),Math.max(.5,2*p.scale),'#ffdb9f');ctx.globalAlpha=1;
     }
   }
-  function human(x,z,id,name,carrier=false,empty=false){
+  function human(x,z,id,name,carrier=false,empty=false,followed=false){
     const n=[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0);
     const bob=Math.sin(t*6+n)*.045;
     const p=point(x,bob,z),s=p.scale*(w/430)*.95;
@@ -70,6 +70,7 @@ export function createFallback(canvas,labelsRoot){
     poly([{x:X-18*s,y:Y-83*s},{x:X+16*s,y:Y-83*s},{x:X+20*s,y:Y-36*s},{x:X-19*s,y:Y-36*s}],['#273437','#2a3034','#34413f'][n%3]);
     line({x:X-17*s,y:Y-72*s},{x:X-23*s,y:Y-36*s+step*.18},'#303b3c',8*s);
     line({x:X+17*s,y:Y-72*s},{x:X+22*s,y:Y-36*s-step*.18},'#303b3c',8*s);
+    if(followed){ctx.fillStyle='#f3ead6';ctx.fillRect(X+19*s,Y-51*s,5*s,13*s);ellipse({x:X+21.5*s,y:Y-54*s},3*s,5*s,'#ffd16a');}
     ellipse({x:X,y:Y-99*s},15*s,19*s,['#c39370','#dbb490','#b6805f'][n%3]);
     poly([{x:X-14*s,y:Y-104*s},{x:X-14*s,y:Y-117*s},{x:X+13*s,y:Y-118*s},{x:X+15*s,y:Y-103*s},{x:X+5*s,y:Y-111*s},{x:X-7*s,y:Y-109*s}],'#1c211f');
     if(empty)ctx.globalAlpha=.6;
@@ -95,7 +96,7 @@ export function createFallback(canvas,labelsRoot){
   function frontPortrait(){
     // The single holder walks *ahead* of the coffin and raises the framed photo.
     const p=state.portraitBearer;
-    human(0,4.6,p?.id||'portrait-empty',null,false,!p);
+    human(0,4.6,p?.id||'portrait-empty',null,false,!p,p?.followed);
     const mid=point(0,2.25,4.6),sc=mid.scale*(w/430)*.72;
     const bob=Math.sin(t*6)*2*sc;
     const bw=94*sc,bh=128*sc;
@@ -118,16 +119,16 @@ export function createFallback(canvas,labelsRoot){
     ctx.clearRect(0,0,w,h);drawRoad();scenery();
     const ids=new Set(state.carriers.filter(Boolean).map(p=>p.id));
     if(state.portraitBearer)ids.add(state.portraitBearer.id);
-    const viewers=state.people.filter(p=>!ids.has(p.id)).slice(0,95);
+    const viewers=state.people.filter(p=>!ids.has(p.id)).slice(-95).reverse();
     for(let i=viewers.length-1;i>=0;i--){
       const row=Math.floor(i/5);const col=i%5;
       const p=viewers[i],x=(col-2)*1.1+(row%2)*.3,z=-3.5-row*1.16;
-      human(x,z,p.id,p.name);
+      human(x,z,p.id,p.name,false,false,p.followed);
     }
     // Rear 3 carriers, casket, front 3 carriers.
-    for(let i of [2,5,1,4]){const p=state.carriers[i];human(i<3?-1.15:1.15, [1.25,0,-1.25][i%3],p?.id||i,p?.name, true,!p)}
+    for(let i of [2,5,1,4]){const p=state.carriers[i];human(i<3?-1.15:1.15, [1.25,0,-1.25][i%3],p?.id||i,p?.name, true,!p,p?.followed)}
     coffin();
-    for(let i of [0,3]){const p=state.carriers[i];human(i<3?-1.15:1.15,1.25,p?.id||i,p?.name,true,!p)}
+    for(let i of [0,3]){const p=state.carriers[i];human(i<3?-1.15:1.15,1.25,p?.id||i,p?.name,true,!p,p?.followed)}
     frontPortrait();
   }
   requestAnimationFrame(render);

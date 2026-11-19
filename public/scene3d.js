@@ -361,7 +361,7 @@ export function createScene(canvas, labelsRoot, T) {
       assignments.push({ id: p?.id || `empty-${i}`, person: p, ...pos, role: 'carrier', slot: i, empty: !p });
     }
     assignments.push({ id: s.portraitBearer?.id || 'portrait-empty', person: s.portraitBearer, x: 0, z: PORTRAIT_Z, role: 'portrait', slot: 6, empty: !s.portraitBearer });
-    const crowd = s.people.filter(p => !onStage.has(p.id)).slice(0, MAX_CROWD);
+    const crowd = s.people.filter(p => !onStage.has(p.id)).slice(-MAX_CROWD).reverse();
     crowd.forEach((p, i) => assignments.push({ id: p.id, person: p, ...crowdSlot(i), role: 'crowd', slot: -1, row: Math.floor(i / 5), empty: false }));
     const active = new Set(assignments.map(a => a.id));
     for (const [id, rig] of personCache) if (!active.has(id)) { scene.remove(rig.group); rig.label.remove(); personCache.delete(id); }
@@ -383,7 +383,7 @@ export function createScene(canvas, labelsRoot, T) {
       const fresh = p?.comment && Date.now() - p.commentAt < 7000;
       if (fresh && rig.bubble.textContent !== p.comment) { rig.bubble.textContent = p.comment; rig.bubbleUntil = p.commentAt + 7000; }
       rig.label.className = `world-name ${a.role}${a.empty ? ' empty' : ''}`;
-      rig.candle.visible = !a.empty && (p?.likes || 0) > 0 && a.role !== 'portrait';
+      rig.candle.visible = !a.empty && Boolean(p?.followed);
       rig.sash.visible = a.role === 'portrait' && !a.empty;
       rig.group.scale.setScalar(a.role === 'portrait' ? 1.06 : 1);
       rig.ghost = a.empty;

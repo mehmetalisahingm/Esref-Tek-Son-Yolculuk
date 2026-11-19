@@ -1,6 +1,6 @@
 # SON YOLCULUK — Eşref Tek interaktif TikTok LIVE oyunu
 
-Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. Hediye atan altı farklı izleyici tabutu taşır; yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir. Yeni bir hediye gönderen geldiğinde en uzun süredir hediye göndermeyen taşıyıcı arkaya geçer.
+Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. En çok beğeni atan altı izleyici tabutu, en çok hediye gönderen izleyici fotoğrafı taşır. Yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir.
 
 Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir. Dizi müziği ve video görüntüsü kullanılmaz; arka plan müziği kamu malı bir eserin canlı sentezidir.
 
@@ -10,10 +10,10 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 - **Kendi şarkın:** kontrol panelinden MP3 / M4A / OGG / WAV yükle (en fazla 15 MB). Overlay döngüde çalar, hediye ve taht duyurularında kısa süre kısar. Ana ses, müzik ve efekt seviyeleri ayrı ayarlanır. Dosya yalnızca bilgisayarda (`public/music-custom.*`) kalır, repoya gitmez. Telifli şarkıları TikTok canlı yayında sessize alabilir.
 - **Varsayılan müzik:** şarkı yüklenmezse Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
 - **Yorum balonları:** yorum yazan izleyicinin sözü 7 saniye boyunca sahnede kendi karakterinin üstünde görünür.
-- **Beğeni = mum:** beğenen izleyicinin karakteri elinde yanan mumla yürür; her 1.000 beğenide sahnede kutlama olur.
+- **Takip = mum:** takip eden izleyicinin karakteri elinde yanan mumla yürür. Beğeniler tabut taşıma sıralamasını belirler; her 1.000 beğenide kutlama olur.
 - **Hediye alarmları:** altın bant, parıltı patlaması ve gül yağmuru. Büyük hediyeler daha büyük gösterilir.
 - **Taht değişimi:** fotoğraf taşıyıcısı değişince tam ekran altın ışınlı duyuru.
-- **Rekabet:** ilk 3 hediye sıralaması ve "@x tahta 251 puan uzakta" ilerleme çubuğu.
+- **Rekabet:** ilk 3 hediye adedi sıralaması ve fotoğraf liderliği için kalan hediye sayısı.
 - **Dönen çağrı şeridi:** yorum, beğeni, takip ve hediyenin ne işe yaradığını sırayla anlatır.
 - **Anma anı:** overlay'de 2,5 dakikada bir, ortalık sakinken fotoğraflı "Hatırası kalbimizde" kartı ve mum yakma çağrısı çıkar.
 - **Işıltı:** mumlar, fenerler ve altın detaylar yumuşakça parlar. Zayıf bilgisayarda `&nobloom=1` ile kapatılabilir.
@@ -74,12 +74,12 @@ Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve iz
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
 **Olaylar oyunda ne yapar?**
-- **Hediye:** gönderen altı tabut taşıyıcısından birine alınır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
-- **Fotoğraf taşıyıcısı:** TikTok'un bildirdiği elmas değeri × adet, kişinin hediye puanına eklenir. Eşiği (varsayılan 500) aşan ve en çok puanı olan izleyici fotoğrafı taşır. Bu değer gerçek para ya da cüzdan bilgisi değildir.
+- **Hediye:** en çok hediye gönderen fotoğrafı taşır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
+- **Fotoğraf taşıyıcısı:** toplam hediye adedi en yüksek izleyici fotoğrafı taşır; hediye puanı bu sıralamayı belirlemez.
 - **Yorum:** kişi korteje katılır, yorumu sahnede balon olarak görünür.
-- **Beğeni:** kişi korteje katılır, elinde mum yanar.
-- **Takip / paylaşım:** sahnede duyurulur, kişi korteje katılır.
-- **Katılım:** TikTok'un bildirdiği izleyiciler kortejde yürür (TikTok her sessiz izleyiciyi bildirmez).
+- **Beğeni:** kişi korteje katılır; beğeni sayısı tabut taşıma sıralamasını belirler.
+- **Takip:** kişi korteje katılır ve elinde mum yanar. **Paylaşım:** sahnede duyurulur ve kişi korteje katılır.
+- **Katılım:** TikTok'un bildirdiği izleyiciler takip şartı olmadan korteje katılır; yeni gelenler sahnenin ön kısmında gösterilir. TikTok her sessiz izleyiciyi ayrı ayrı bildirmez.
 - **İzleyici sayısı:** sağ üstte görünür.
 
 Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değişikliklerde bozulabilir. Yayından önce kısa bir deneme yap. Proje TikTok hesap şifreni istemez ve saklamaz.
@@ -88,11 +88,11 @@ Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değiş
 
 - **1 ayrı fotoğraf taşıyıcısı** vardır. Önden yürür, omuzda tabut taşıyan altı kişiden ayrı bir karakterdir.
 - Toplam **6** tabut taşıyıcısı yeri vardır. Boş yerlerde NPC (bekleyen karakter) bulunur.
-- İlk altı farklı hediye gönderen sırayla yerleşir.
-- Yedinci farklı kişi hediye gönderirse en eski hediye aktivitesine sahip taşıyıcı yürüyen kalabalığa geçer; yeni kişi yerine girer.
-- Mevcut taşıyıcının yeni hediyesi yerini korur.
-- Diğer katılımcılar arkadaki kalabalıkta yürür (sunucuda en fazla 100 kullanıcı, çizimde performans için ilk 80 kişi).
-- Özel fotoğraf taşıyıcısı asla altı tabut taşıyıcısından biriyle aynı anda aynı kişi olmaz. Boşalan tabut yeri mümkünse önceden hediye atan bir izleyiciyle otomatik doldurulur.
+- En çok beğeni atan altı izleyici tabutu taşır; sıralama yeni beğenilerle güncellenir.
+- En çok hediye gönderen izleyici fotoğrafı taşır; hediye adedi esas alınır.
+- Fotoğraf taşıyıcısı tabut taşıyamaz; sıradaki beğeni sahibi boş yere geçer.
+- Eşit beğenide mevcut taşıyıcı önceliklidir; hediye eşitliğinde önce katılan izleyici önceliklidir.
+- Diğer katılımcılar arkadaki kalabalıkta yürür; çizimde performans için ilk 80 kişi gösterilir.
 - Aynı kullanıcı tekrar yorum yazdığında ikinci avatar oluşmaz. Kullanıcılar kimliğe göre eşleştirilir.
 - Demo başlangıcında sahnede örnek kullanıcılar bulunur. Gerçek yayına bağlanırken demo kullanıcıları temizlenir.
 
