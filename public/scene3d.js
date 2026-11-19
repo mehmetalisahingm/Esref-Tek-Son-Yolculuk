@@ -3,7 +3,7 @@ export function createScene(canvas, labelsRoot, T) {
   const SPEED = .85;           // world units per second the road scrolls under the procession
   const PORTRAIT_Z = 4.4;      // the portrait bearer walks well ahead so the frame never hides the coffin
   const MAX_CROWD = 60;
-  const HUD_BOTTOM = .41;     // the info board covers the top 41% of the frame; crowd names hide under it
+  const HUD_BOTTOM = .2;      // the info board covers the top 20% of the frame; names hide under it
 
   // ——— Renderer & scene ———
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -380,7 +380,7 @@ export function createScene(canvas, labelsRoot, T) {
       rig.target = a;
       rig.group.visible = true;
       const p = a.person;
-      rig.handle.textContent = a.empty ? (a.role === 'portrait' ? '👑 En çok hediye atan taşır' : '') : (a.role === 'portrait' ? `👑 @${p.name}` : `@${p.name}`);
+      rig.handle.textContent = a.empty ? (a.role === 'portrait' ? '👑 En çok hediye atan taşır' : '') : a.role === 'portrait' ? `👑 @${p.name}` : a.role === 'carrier' ? `@${p.name} ❤️${(p.likes || 0).toLocaleString('tr-TR')}` : `@${p.name}`;
       const fresh = p?.comment && Date.now() - p.commentAt < 7000;
       if (fresh && rig.bubble.textContent !== p.comment) { rig.bubble.textContent = p.comment; rig.bubbleUntil = p.commentAt + 7000; }
       rig.label.className = `world-name ${a.role}${a.empty ? ' empty' : ''}`;
@@ -423,9 +423,9 @@ export function createScene(canvas, labelsRoot, T) {
 
   // ——— Camera ———
   const views = [
-    { pos: new T.Vector3(0, 9, 18), look: new T.Vector3(0, 2, 0) },     // Klasik
-    { pos: new T.Vector3(7.2, 9, 16.6), look: new T.Vector3(.2, 2, .2) },    // Yandan
-    { pos: new T.Vector3(-3, 7, 18.4), look: new T.Vector3(0, 2.3, .4) },   // Alçak açı
+    { pos: new T.Vector3(0, 9, 18), look: new T.Vector3(0, 2.5, 1) },     // Klasik
+    { pos: new T.Vector3(7.2, 9, 16.6), look: new T.Vector3(.2, 2.5, 1) },    // Yandan
+    { pos: new T.Vector3(-3, 7.6, 18.4), look: new T.Vector3(0, 2.6, 1.2) },   // Alçak açı
   ];
   let cameraMode = 3; // 3 = automatic cinematic drift
   const camPos = views[0].pos.clone(), camLook = views[0].look.clone();
@@ -433,7 +433,7 @@ export function createScene(canvas, labelsRoot, T) {
   function cameraGoal(t) {
     if (cameraMode < 3) return views[cameraMode];
     const yaw = Math.sin(t * .045) * .26, rise = Math.sin(t * .031 + 1) * .5, dist = 17.9 + Math.sin(t * .027) * .5;
-    return { pos: new T.Vector3(Math.sin(yaw) * dist, 9 + rise, Math.cos(yaw) * dist), look: new T.Vector3(Math.sin(yaw) * -.3, 2, 0) };
+    return { pos: new T.Vector3(Math.sin(yaw) * dist, 9 + rise, Math.cos(yaw) * dist), look: new T.Vector3(Math.sin(yaw) * -.3, 2.5, 1) };
   }
 
   // ——— Labels (DOM) with simple collision avoidance ———
@@ -450,13 +450,14 @@ export function createScene(canvas, labelsRoot, T) {
       const talking = rig.bubbleUntil > now;
       lab.classList.toggle('talking', talking);
       if (t.empty && t.role !== 'portrait') { lab.style.display = 'none'; continue; }
-      if (t.role === 'crowd' && !talking && (crowdShown >= 9 || t.row > 3)) { lab.style.display = 'none'; continue; }
+      if (t.role === 'crowd' && !talking && (crowdShown >= 30 || t.row > 9)) { lab.style.display = 'none'; continue; }
       if (t.role === 'portrait') portraitRig.localToWorld(vec.set(0, FRAME_Y + FH / 2 + .1, 0)); else { rig.group.getWorldPosition(vec); vec.y += 2.28; }
       const p = project(vec, rect);
       const u = rect.width / 540;
       if (talking) p.y = Math.max(p.y, rect.height * HUD_BOTTOM + 50 * u);
       if (p.z > 1 || p.x < -40 || p.x > rect.width + 40 || p.y < 0 || p.y > rect.height) { lab.style.display = 'none'; continue; }
-      const w = (talking ? 170 : 86) * u, h = (talking ? 50 : 16) * u;
+      const chars = (rig.handle.textContent || '').length;
+      const w = (talking ? 170 : Math.min(120, chars * (t.role === 'crowd' ? 5.4 : 6.2) + 12)) * u, h = (talking ? 50 : t.role === 'crowd' ? 13 : 18) * u;
       const box = t.role === 'portrait' ? { l: p.x - 80, r: p.x + 80, t: p.y - 22, b: p.y } : { l: p.x - w / 2, r: p.x + w / 2, t: p.y - h, b: p.y };
       const hits = o => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t;
       if (t.role === 'crowd' && (talking ? placed.some(o => o.talking && hits(o)) : (p.y < rect.height * HUD_BOTTOM || placed.some(hits)))) { lab.style.display = 'none'; continue; }
