@@ -23,7 +23,7 @@ export function createFallback(canvas,labelsRoot){
     const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#1b302c');sky.addColorStop(1,'#556b59');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.43);
     poly([point(-4,0,-40),point(4,0,-40),point(4,0,12),point(-4,0,12)],'#606b5e');
     for(let i=0;i<85;i++){
-      const z=-35+((i*3.03+t*.35)%46), x=(rand(i)*7-3.5);
+      const z=-35+(((i*3.03-t*.35)%46)+46)%46, x=(rand(i)*7-3.5);
       const p=point(x,0,z);const s=p.scale;
       ctx.fillStyle=['#859083','#737d74','#6c776e'][i%3];
       ctx.globalAlpha=.30;ctx.fillRect(p.x,p.y,Math.max(1,8*s),Math.max(.6,3*s));ctx.globalAlpha=1;
@@ -47,12 +47,12 @@ export function createFallback(canvas,labelsRoot){
   }
   function scenery(){
     for(let i=0;i<18;i++){
-      const z=-36+i*2.8+(t*.6%2.8);
+      const z=-36+i*2.8+2.8-(t*.6%2.8);
       tree(i%2?-6.4:6.6,z,i);
       if(i%4===1)lantern(i%2?-4.6:4.5,z+.7);
     }
     for(let i=0;i<28;i++){
-      const z=-29+i*1.47+t*.08;
+      const z=-29+(((i*1.47-t*.08)%41)+41)%41;
       const p=point((rand(i*31)-.5)*13,2.0+rand(i)*3,z);
       ctx.globalAlpha=.2+rand(i+3)*.3;ellipse(p,Math.max(.5,1.5*p.scale),Math.max(.5,2*p.scale),'#ffdb9f');ctx.globalAlpha=1;
     }
