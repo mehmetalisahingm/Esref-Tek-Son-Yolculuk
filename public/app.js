@@ -404,7 +404,7 @@ for (let slot = 1; slot <= 3; slot++) {
     showToast(`♫ ${slot}. şarkı kaldırıldı`);
   });
 }
-on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Varsayılan müziğe dönüldü'); });
+on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Üç orijinal müziğe dönüldü'); });
 $('#preview-toggle').addEventListener('change', () => { previewOn = $('#preview-toggle').checked; if (previewOn) unlock(); configureAudio(); });
 $('#copy-overlay').addEventListener('click', async () => { try { await navigator.clipboard.writeText(`${location.origin}/?overlay=1`); showToast('📋 Overlay adresi kopyalandı'); } catch { showToast(`${location.origin}/?overlay=1`); } });
 text('#overlay-url', `${location.origin}/?overlay=1`);
