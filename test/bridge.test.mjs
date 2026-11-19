@@ -110,7 +110,8 @@ test('TikFinity bridge brings comments, joins, follows, likes, gifts and viewers
   assert.equal(s.follows, 1);
   assert.equal(s.likes, 15);
   assert.equal(byId('u5').giftCount, 5);
-  assert.ok(s.carriers.some(c => c?.id === 'u5'), 'gül atan tabutu omuzladı');
+  assert.ok(s.carriers.some(c => c?.id === 'u4'), 'beğenen tabutu omuzladı');
+  assert.ok(s.carriers.every(c => c?.id !== 'u5'), 'hediye omuz vermez');
   assert.equal(s.portraitBearer.id, 'u6');
   assert.equal(byId('u6').giftPoints, 29999);
   assert.equal(s.gifts, 6);

@@ -16,7 +16,8 @@ const MAX_EVENTS = 40;
 const LIKE_MILESTONE = 1000;
 // Official Kanal D Eşref Tek character profile picture, used as a remote default.
 const DEFAULT_PORTRAIT_URL = 'https://image.kanald.com.tr/i/kanald/100/200x286/6864d72ccf62483f9cfa5def.jpg';
-const PORTRAIT_COST = 500;
+// 0 = the single biggest gifter carries the portrait; raise it to require a minimum score.
+const PORTRAIT_COST = 0;
 const savedPortrait = ['jpg', 'png', 'webp'].find(ext => existsSync(path.join(PUBLIC, `portrait-custom.${ext}`)));
 const MUSIC_EXTS = ['mp3', 'm4a', 'ogg', 'wav'];
 const MAX_MUSIC_BYTES = 15 * 1024 * 1024;
@@ -70,7 +71,7 @@ function safeIdentity(name, id) {
   return { name: cleanName, id: String(id || cleanName.toLocaleLowerCase('tr-TR')).slice(0, 90) };
 }
 function makePerson(name, id, demo = false) {
-  return { name, id, demo, giftCount: 0, giftPoints: 0, likes: 0, joined: Date.now(), lastGift: 0, comment: '', commentAt: 0 };
+  return { name, id, demo, giftCount: 0, giftPoints: 0, likes: 0, firstLike: 0, joined: Date.now(), lastGift: 0, comment: '', commentAt: 0 };
 }
 function event(type, name, detail = '', extra = {}) {
   state.events.unshift({ id: crypto.randomUUID(), type, name: String(name).slice(0, 26), detail: String(detail).slice(0, 80), time: Date.now(), ...extra });
@@ -143,40 +144,48 @@ export function like(name, id, count = 1, demo = false) {
   const { person, isNew } = personFor(name, id, demo);
   const n = Math.min(1000, Math.max(1, Math.trunc(Number(count) || 1)));
   const before = state.likes;
+  if (!person.likes) person.firstLike = Date.now();
   person.likes += n;
   state.likes += n;
   if (isNew || person.likes === n) event('like', person.name, 'Mum yaktı 🕯️', { count: n });
+  updateCarriers();
   if (Math.floor(before / LIKE_MILESTONE) !== Math.floor(state.likes / LIKE_MILESTONE)) {
     event('milestone', 'KORTEJ', `${(Math.floor(state.likes / LIKE_MILESTONE) * LIKE_MILESTONE).toLocaleString('tr-TR')} mum yandı`);
   }
   emit();
   return person;
 }
-// VIP is determined by total reported gift value for the current game session.
+// The biggest gifter of this session carries Eşref Tek's portrait. On a tie the current holder keeps it.
 function choosePortraitBearer() {
-  const eligible = state.people.filter(p => p.giftPoints >= state.portraitCost);
-  eligible.sort((a, b) => b.giftPoints - a.giftPoints || b.lastGift - a.lastGift);
-  const winner = eligible[0] || null;
+  const eligible = state.people.filter(p => p.giftCount > 0 && p.giftPoints >= state.portraitCost);
+  eligible.sort((a, b) => b.giftPoints - a.giftPoints || b.giftCount - a.giftCount || a.lastGift - b.lastGift);
   const previous = state.portraitBearer;
+  let winner = eligible[0] || null;
+  if (winner && previous && winner !== previous && eligible.includes(previous) && previous.giftPoints === winner.giftPoints && previous.giftCount === winner.giftCount) winner = previous;
   if (previous?.id === winner?.id) return false;
   state.portraitBearer = winner;
-  if (winner) {
-    const slot = state.carriers.findIndex(p => p?.id === winner.id);
-    if (slot >= 0) state.carriers[slot] = null;
-    event('portrait', winner.name, `Fotoğrafı taşıyor · ${winner.giftPoints.toLocaleString('tr-TR')} puan`, { points: winner.giftPoints, previous: previous?.name || '' });
-  } else if (previous) { event('rotate', previous.name, 'Fotoğraf taşıyıcılığı sona erdi'); }
+  if (winner) event('portrait', winner.name, `Fotoğrafı taşıyor · ${winner.giftPoints.toLocaleString('tr-TR')} puan`, { points: winner.giftPoints, previous: previous?.name || '' });
+  else if (previous) event('rotate', previous.name, 'Fotoğraf taşıyıcılığı sona erdi');
   return true;
 }
-function fillCarrierVacancies() {
-  // Keep six unique people in the casket team where enough gift-givers exist.
-  const taken = new Set(state.carriers.filter(Boolean).map(p => p.id));
-  if (state.portraitBearer) taken.add(state.portraitBearer.id);
-  const candidates = state.people.filter(p => p.giftCount > 0 && !taken.has(p.id)).sort((a, b) => b.lastGift - a.lastGift);
-  for (let i = 0; i < state.carriers.length; i++) {
-    if (state.carriers[i] === null && candidates.length) {
-      const p = candidates.shift(); state.carriers[i] = p; taken.add(p.id);
-    }
+// The six viewers with the most likes carry the coffin. People who stay in the top six keep their
+// shoulder, newcomers take the shoulders that were freed, so the line-up does not reshuffle on every like.
+function updateCarriers() {
+  const current = new Set(state.carriers.filter(Boolean).map(p => p.id));
+  const bearer = state.portraitBearer?.id;
+  const ranked = state.people.filter(p => p.likes > 0 && p.id !== bearer)
+    .sort((a, b) => b.likes - a.likes || (current.has(b.id) - current.has(a.id)) || a.firstLike - b.firstLike)
+    .slice(0, 6);
+  const keep = new Set(ranked.map(p => p.id));
+  const next = state.carriers.map(p => (p && keep.has(p.id) ? state.people.find(x => x.id === p.id) || p : null));
+  for (const p of state.carriers) if (p && !keep.has(p.id) && p.id !== bearer) event('rotate', p.name, 'Omzunu devretti · korteje geçti');
+  for (const p of ranked) {
+    if (next.some(c => c?.id === p.id)) continue;
+    const slot = next.indexOf(null);
+    next[slot] = p;
+    event('carrier', p.name, `${slot + 1}. omuz · ${p.likes.toLocaleString('tr-TR')} beğeni`, { slot, likes: p.likes });
   }
+  state.carriers = next;
 }
 export function gift(name, id, giftName = 'Hediye', amount = 1, demo = false, unitPoints = 1) {
   const { person } = personFor(name, id, demo);
@@ -191,22 +200,13 @@ export function gift(name, id, giftName = 'Hediye', amount = 1, demo = false, un
   state.gifts += value;
   state.giftPoints += points;
   const photoChanged = choosePortraitBearer();
-  const isPortrait = state.portraitBearer?.id === person.id;
-  const meta = { giftName: label, amount: value, points };
-  if (isPortrait) {
-    if (!photoChanged) event('gift', person.name, `${label} · Fotoğraf taşıyıcısına destek (+${points})`, { ...meta, slot: -1 });
+  const meta = { giftName: label, amount: value, points, slot: -1 };
+  if (state.portraitBearer?.id === person.id) {
+    if (!photoChanged) event('gift', person.name, `${label} · fotoğraf taşıyıcısı +${points} puan`, { ...meta, holder: true });
   } else {
-    const already = state.carriers.findIndex(p => p?.id === person.id);
-    if (already === -1) {
-      const vacant = state.carriers.findIndex(p => p === null);
-      const slot = vacant !== -1 ? vacant : state.carriers.reduce((oldest, p, i, all) => (p.lastGift < all[oldest].lastGift ? i : oldest), 0);
-      const outgoing = state.carriers[slot];
-      state.carriers[slot] = person;
-      if (outgoing) event('rotate', outgoing.name, 'Omzunu devretti · korteje geçti');
-      event('gift', person.name, `${label} · ${slot + 1}. tabut taşıyıcısı`, { ...meta, slot, newCarrier: true });
-    } else { event('gift', person.name, `${label} · ${already + 1}. taşıyıcı yerini korudu`, { ...meta, slot: already }); }
+    event('gift', person.name, `${label} · fotoğraf yarışında ${person.giftPoints.toLocaleString('tr-TR')} puan`, meta);
   }
-  if (photoChanged) fillCarrierVacancies();
+  if (photoChanged) updateCarriers();
   emit();
   return person;
 }
@@ -219,20 +219,22 @@ function clearState(demo) {
 function demoSeed() {
   clearState(true);
   const carriers = ['mehmet.ali', 'utku.61', 'mertcan', 'feyza', 'enes.34', 'melis'];
+  const carrierLikes = [180, 150, 120, 95, 70, 52];
   carriers.forEach((n, i) => {
     const { person: p } = findOrAdd(n, `demo-carrier-${i}`, true);
-    p.giftCount = 1 + i; p.giftPoints = 5 + i * 30; p.lastGift = Date.now() - (6 - i) * 9000;
+    p.likes = carrierLikes[i]; p.firstLike = Date.now() - (6 - i) * 9000;
     state.carriers[i] = p;
   });
   seedUsers.slice(0, 26).forEach((n, i) => {
     const { person: p } = findOrAdd(n, `demo-crowd-${i}`, true);
     if (i < 6) { p.comment = seedComments[i % seedComments.length]; p.commentAt = Date.now() - i * 1500; }
-    p.likes = (i * 7) % 40;
+    p.likes = (i * 7) % 40; if (p.likes) p.firstLike = Date.now() - 60000 + i;
+    if (i === 3 || i === 9) { p.giftCount = 2; p.giftPoints = i === 3 ? 299 : 120; p.lastGift = Date.now() - 20000; }
   });
   const { person: portrait } = findOrAdd('efsane.dostu', 'demo-portrait', true);
-  portrait.giftCount = 3; portrait.giftPoints = state.portraitCost + 250; portrait.lastGift = Date.now(); state.portraitBearer = portrait;
+  portrait.giftCount = 3; portrait.giftPoints = 750; portrait.lastGift = Date.now(); state.portraitBearer = portrait;
   state.likes = 846;
-  state.events = [{ id: crypto.randomUUID(), type: 'info', name: 'DEMO', detail: `Ön fotoğraf: ${state.portraitCost} hediye puanı`, time: Date.now() }];
+  state.events = [{ id: crypto.randomUUID(), type: 'info', name: 'DEMO', detail: 'Beğeni → tabut · Hediye → fotoğraf', time: Date.now() }];
   emit();
 }
 function readBody(req, maxBytes = 16384) {
@@ -367,8 +369,8 @@ const server = http.createServer(async (req, res) => {
         case '/api/follow': { const p = join(body.name, body.id, 'follow'); return respond(res, 200, { ok: true, person: p }); }
         case '/api/settings': {
           const cost = Number(body.portraitCost);
-          if (!Number.isInteger(cost) || cost < 10 || cost > 100000) return respond(res, 400, { error: 'Eşik 10–100.000 arasında olmalı' });
-          state.portraitCost = cost; choosePortraitBearer(); fillCarrierVacancies();
+          if (!Number.isInteger(cost) || cost < 0 || cost > 100000) return respond(res, 400, { error: 'Eşik 0–100.000 arasında olmalı' });
+          state.portraitCost = cost; choosePortraitBearer(); updateCarriers();
           event('info', 'AYAR', `Fotoğraf taşıma eşiği ${cost.toLocaleString('tr-TR')} puan`); emit();
           return respond(res, 200, { ok: true, portraitCost: cost });
         }

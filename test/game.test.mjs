@@ -32,14 +32,29 @@ test('a comment joins the crowd only once',async()=>{
   await post('chat',{name:'tester',id:'viewer-test'});
   assert.equal((await getState()).people.length,size);
 });
-test('a seventh gift replaces the oldest carrier, who stays in the crowd',async()=>{
-  const first=(await getState()).carriers[0];
+test('the six biggest likers carry the coffin; a new top liker takes the weakest shoulder',async()=>{
+  const before=await getState();
+  const weakest=before.carriers.reduce((m,p)=>p.likes<m.likes?p:m);
+  const slot=before.carriers.findIndex(p=>p.id===weakest.id);
+  const kept=before.carriers.filter(p=>p.id!==weakest.id).map(p=>[p.id,before.carriers.indexOf(p)]);
+  await post('like',{name:'begenici',id:'top-liker',count:weakest.likes+1});
+  const now=await getState();
+  assert.equal(now.carriers[slot].id,'top-liker');
+  for(const [id,i] of kept) assert.equal(now.carriers[i].id,id,'diğer taşıyıcılar omzunu korur');
+  assert.ok(now.people.some(p=>p.id===weakest.id),'düşen taşıyıcı kortejde kalır');
+  assert.equal(now.events.find(e=>e.type==='carrier').name,'begenici');
+});
+test('a gift does not take a shoulder; it counts towards the portrait',async()=>{
+  const carriers=(await getState()).carriers.map(p=>p.id);
   await post('gift',{name:'gift-entrant',id:'new-gifter',giftName:'Gül',amount:2});
   const now=await getState();
-  assert.equal(now.carriers.length,6);
-  assert.ok(now.carriers.some(p=>p.id==='new-gifter'));
-  assert.ok(now.people.some(p=>p.id===first.id));
+  assert.deepEqual(now.carriers.map(p=>p.id),carriers);
   assert.equal(now.gifts,2);
+});
+test('anyone who likes once holds a candle (likes are tracked per viewer)',async()=>{
+  await post('like',{name:'tek.mum',id:'one-like',count:1});
+  const p=(await getState()).people.find(x=>x.id==='one-like');
+  assert.equal(p.likes,1);
 });
 test('a repeat gift by the same user does not add another character',async()=>{
   const n=(await getState()).people.length;
@@ -217,5 +232,22 @@ test('static files cannot escape the public folder',async()=>{
   assert.notEqual(r.status,200);
   const v=await fetch(base+'/vendor/..%2fpackage.json');
   assert.notEqual(v.status,200);
+  await post('demo');
+});
+
+test('the biggest gifter carries the portrait and is never also a coffin carrier',async()=>{
+  await post('reset');
+  await post('settings',{portraitCost:0});
+  for(let i=0;i<6;i++) await post('like',{name:'l'+i,id:'liker-'+i,count:10+i});
+  await post('like',{name:'cömert',id:'generous',count:100});
+  let s=await getState();
+  assert.ok(s.carriers.some(p=>p?.id==='generous'));
+  await post('gift',{name:'cömert',id:'generous',giftName:'Aslan',amount:1,unitPoints:29999});
+  s=await getState();
+  assert.equal(s.portraitBearer.id,'generous');
+  assert.ok(s.carriers.every(p=>p?.id!=='generous'));
+  assert.equal(s.carriers.filter(Boolean).length,6,'boşalan omuz bir sonraki beğeniciye geçer');
+  await post('gift',{name:'rakip',id:'rival',amount:1,unitPoints:29999});
+  assert.equal((await getState()).portraitBearer.id,'generous','eşitlikte mevcut taşıyıcı kalır');
   await post('demo');
 });

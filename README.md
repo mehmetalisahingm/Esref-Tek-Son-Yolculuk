@@ -52,7 +52,9 @@ Dikey yayın için **Tarayıcı/Browser Source** ekle:
 - FPS: `30` veya `60`
 - OBS'de **"Sesi OBS üzerinden kontrol et"** seçeneğini açarsan müzik yayına gider.
 
-Ek adres seçenekleri: `&compact=1` alt paneli küçültür (TikTok'un yorum sütunu ekranın altını kapatır), `&cam=0..3` başlangıç kamerasını seçer, `&fallback=1` hafif 2.5D çizimi zorlar.
+Düzen TikTok'a göre ayarlı: en üstteki şerit TikTok'un kendi adı/izleyici bilgisine, alt üçte biri de yorumlara boş bırakılır; kurallar, fotoğraf taşıyıcısı ve tabut taşıyıcıları başlığın hemen altında durur.
+
+Ek adres seçenekleri: `&cam=0..3` başlangıç kamerasını seçer, `&fallback=1` hafif 2.5D çizimi zorlar.
 
 Overlay sesi otomatik başlatamazsa sağ üstte **🔊 Sesi başlat** düğmesi çıkar; OBS'de kaynağa sağ tıklayıp **Etkileşim** ile bir kez tıkla.
 
@@ -74,10 +76,10 @@ Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve iz
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
 **Olaylar oyunda ne yapar?**
-- **Hediye:** gönderen altı tabut taşıyıcısından birine alınır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
-- **Fotoğraf taşıyıcısı:** TikTok'un bildirdiği elmas değeri × adet, kişinin hediye puanına eklenir. Eşiği (varsayılan 500) aşan ve en çok puanı olan izleyici fotoğrafı taşır. Bu değer gerçek para ya da cüzdan bilgisi değildir.
+- **Hediye:** gönderenin hediye puanına eklenir; en çok hediye puanı olan kişi Eşref Tek'in fotoğrafını taşır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
+- **Fotoğraf taşıyıcısı:** TikTok'un bildirdiği elmas değeri × adet, kişinin hediye puanına eklenir. En çok puanı olan izleyici fotoğrafı taşır (eşitlikte mevcut taşıyıcı kalır). Panelden en az puan şartı koyabilirsin; varsayılan 0, yani ilk hediyeden itibaren yarış başlar. Bu değer gerçek para ya da cüzdan bilgisi değildir.
 - **Yorum:** kişi korteje katılır, yorumu sahnede balon olarak görünür.
-- **Beğeni:** kişi korteje katılır, elinde mum yanar.
+- **Beğeni:** kişi korteje katılır ve tek beğenide bile elinde mum yanar. En çok beğeni atan 6 kişi tabutu taşır.
 - **Takip / paylaşım:** sahnede duyurulur, kişi korteje katılır.
 - **Katılım:** TikTok'un bildirdiği izleyiciler kortejde yürür (TikTok her sessiz izleyiciyi bildirmez).
 - **İzleyici sayısı:** sağ üstte görünür.
@@ -86,13 +88,10 @@ Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değiş
 
 ## Yayın kuralları
 
-- **1 ayrı fotoğraf taşıyıcısı** vardır. Önden yürür, omuzda tabut taşıyan altı kişiden ayrı bir karakterdir.
-- Toplam **6** tabut taşıyıcısı yeri vardır. Boş yerlerde NPC (bekleyen karakter) bulunur.
-- İlk altı farklı hediye gönderen sırayla yerleşir.
-- Yedinci farklı kişi hediye gönderirse en eski hediye aktivitesine sahip taşıyıcı yürüyen kalabalığa geçer; yeni kişi yerine girer.
-- Mevcut taşıyıcının yeni hediyesi yerini korur.
-- Diğer katılımcılar arkadaki kalabalıkta yürür (sunucuda en fazla 100 kullanıcı, çizimde performans için ilk 80 kişi).
-- Özel fotoğraf taşıyıcısı asla altı tabut taşıyıcısından biriyle aynı anda aynı kişi olmaz. Boşalan tabut yeri mümkünse önceden hediye atan bir izleyiciyle otomatik doldurulur.
+- **Tabut:** en çok beğeni atan **6** kişi tabutu taşır. İlk 6'da kalan kişi omzunu korur; ilk 6'ya giren yeni kişi, ilk 6'dan düşen kişinin boşalttığı omza geçer. Düşen kişi kortejde yürümeye devam eder.
+- **Mum:** bir kez beğenen herkesin elinde mum yanar.
+- **Fotoğraf:** en çok hediye puanı olan **1** kişi önden Eşref Tek'in fotoğrafını taşır. Bu kişi aynı anda tabut taşıyıcısı olmaz; boşalan omuz bir sonraki en çok beğenene geçer.
+- **Kortej:** yorum yazan, beğenen, takip eden ve katılan herkes arkada yürür (sunucuda en fazla 100 kullanıcı, çizimde ilk 60 kişi).
 - Aynı kullanıcı tekrar yorum yazdığında ikinci avatar oluşmaz. Kullanıcılar kimliğe göre eşleştirilir.
 - Demo başlangıcında sahnede örnek kullanıcılar bulunur. Gerçek yayına bağlanırken demo kullanıcıları temizlenir.
 
@@ -129,7 +128,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 29 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 32 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 
