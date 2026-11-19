@@ -241,7 +241,8 @@ body.overlay .shell{padding:0;max-width:none}
 body.overlay .topbar,body.overlay .sidebar,body.overlay .scene-under,body.overlay .site-footer,body.overlay .toast{display:none}
 body.overlay .layout{display:block}
 body.overlay .scene-column{max-width:none;position:static}
-body.overlay .game-frame{position:fixed;inset:0;aspect-ratio:auto;border-radius:0;box-shadow:none}
+/* Always a centred 9:16 portrait frame, even in a wide window; black bars fill the rest. */
+body.overlay .game-frame{position:fixed;top:0;left:50%;transform:translateX(-50%);height:100vh;width:min(100vw,calc(100vh*9/16));aspect-ratio:auto;border-radius:0;box-shadow:none}
 
 @media (max-width:980px){.layout{grid-template-columns:1fr}.scene-column{position:static}.stats-row{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.shell{padding:14px}.test-buttons.four,.quick-actions{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
