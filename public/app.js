@@ -240,6 +240,9 @@ function updateStatus(s) {
     if (el.textContent !== String(n)) { el.textContent = short(n); if ((lastCounts[k] || 0) < n) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
     lastCounts[k] = n;
   }
+  const unk = Object.entries(b.unknown || {});
+  $('#diag-unknown').hidden = !unk.length;
+  text('#diag-unknown', unk.length ? `Tanınmayan olaylar: ${unk.map(([k, n]) => `${k}×${n}`).join(', ')}` : '');
   updateBridgeTimes();
 }
 function updateAudioPanel(s) {

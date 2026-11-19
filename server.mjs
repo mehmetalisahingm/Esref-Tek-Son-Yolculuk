@@ -241,7 +241,7 @@ async function saveBridgeConfig() {
 function bridgeSnapshot() {
   const b = bridge.status;
   return {
-    mode: b.mode, state: b.state, message: b.message, counts: b.counts, lastEventAt: b.lastEventAt, lastEventType: b.lastEventType, since: b.since,
+    mode: b.mode, state: b.state, message: b.message, counts: b.counts, unknown: b.unknown, lastEventAt: b.lastEventAt, lastEventType: b.lastEventType, since: b.since,
     username: bridgeConfig.username, tikfinityUrl: bridgeConfig.tikfinityUrl, hasSignKey: Boolean(bridgeConfig.signApiKey), savedMode: bridgeConfig.mode,
   };
 }
@@ -277,15 +277,17 @@ function countGift(ev) {
   const unitPoints = g.diamonds != null && Number.isFinite(Number(g.diamonds)) ? Number(g.diamonds) : 0;
   gift(user.name, user.id, g.name.slice(0, 32), delta, false, unitPoints);
 }
+// A viewer is usable when TikTok gave an id or at least a real name (anonymous joins carry only a name).
+const known = u => Boolean(u && (u.id || (u.name && u.name !== 'izleyici')));
 function ingest(ev) {
   const u = ev.user;
   switch (ev.type) {
     case 'chat': chat(u.name, u.id, false, ev.comment); break;
     // Join notifications are not guaranteed for every passive viewer; TikTok decides what it sends.
-    case 'member': if (u.id) join(u.name, u.id, 'member'); break;
-    case 'follow': if (u.id) join(u.name, u.id, 'follow'); break;
-    case 'share': if (u.id) join(u.name, u.id, 'share'); break;
-    case 'like': if (u.id) like(u.name, u.id, ev.count); break;
+    case 'member': if (known(u)) join(u.name, u.id, 'member'); break;
+    case 'follow': if (known(u)) join(u.name, u.id, 'follow'); break;
+    case 'share': if (known(u)) join(u.name, u.id, 'share'); break;
+    case 'like': if (known(u)) like(u.name, u.id, ev.count); break;
     case 'viewers': if (Number.isFinite(ev.viewers) && ev.viewers >= 0) { state.viewerCount = ev.viewers; emit(); } break;
     case 'gift': countGift(ev); break;
     case 'end': event('info', 'YAYIN', 'Canlı yayın sona erdi'); emit(); break;
