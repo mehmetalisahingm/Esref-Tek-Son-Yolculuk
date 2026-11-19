@@ -454,7 +454,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 setInterval(() => { for (const c of clients) { try { c.write(': ping\n\n'); } catch { clients.delete(c); } } }, 20000).unref();
-demoSeed();
+// Start with an empty procession: only real viewers appear. Set SON_YOLCULUK_DEMO=1 to start with sample viewers.
+if (process.env.SON_YOLCULUK_DEMO === '1') demoSeed(); else { clearState(false); emit(); }
 server.listen(PORT, HOST, () => {
   console.log(`\n🎬 Eşref Tek | Son Yolculuk: http://${HOST === '127.0.0.1' ? 'localhost' : HOST}:${PORT}`);
   console.log(`📺 OBS / TikTok LIVE Studio kaynağı: http://localhost:${PORT}/?overlay=1`);

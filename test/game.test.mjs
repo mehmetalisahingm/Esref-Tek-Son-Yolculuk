@@ -19,7 +19,15 @@ before(async()=>{
 after(()=>{child?.kill();});
 async function getState(){const r=await fetch(base+'/api/state');assert.equal(r.status,200);return r.json();}
 async function post(path,payload={}){const r=await fetch(base+'/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});assert.equal(r.status,200);return r.json();}
+test('the game starts empty, without sample viewers',async()=>{
+  const s=await getState();
+  assert.equal(s.people.length,0);
+  assert.equal(s.carriers.filter(Boolean).length,0);
+  assert.equal(s.portraitBearer,null);
+  assert.equal(s.demo,false);
+});
 test('demo provides exactly six distinct pallbearers and a following crowd',async()=>{
+  await post('demo');
   const state=await getState();
   assert.equal(state.carriers.length,6);
   assert.equal(new Set(state.carriers.map(p=>p.id)).size,6);
