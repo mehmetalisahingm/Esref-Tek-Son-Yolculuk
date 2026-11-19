@@ -107,12 +107,15 @@ test('TikFinity bridge brings comments, joins, follows, likes, gifts and viewers
   const byId = id => s.people.find(p => p.id === id);
   assert.equal(byId('u1').comment, 'Mekânın cennet olsun');
   assert.ok(byId('u2'), 'katılan izleyici kortejde');
+  assert.equal(byId('u2').followed, false, 'katılım için takip gerekmez');
+  assert.equal(byId('u3').followed, true, 'takip eden mum yakar');
+  assert.equal(byId('u4').followed, false, 'beğeni tek başına mum yakmaz');
   assert.equal(s.follows, 1);
   assert.equal(s.likes, 15);
   assert.equal(byId('u5').giftCount, 5);
-  assert.ok(s.carriers.some(c => c?.id === 'u4'), 'beğenen tabutu omuzladı');
-  assert.ok(s.carriers.every(c => c?.id !== 'u5'), 'hediye omuz vermez');
-  assert.equal(s.portraitBearer.id, 'u6');
+  assert.equal(s.portraitBearer.id, 'u5');
+  assert.ok(s.carriers.some(c => c?.id === 'u4'), 'beğeni atan tabutu omuzladı');
+  assert.equal(s.portraitBearer.id, 'u5');
   assert.equal(byId('u6').giftPoints, 29999);
   assert.equal(s.gifts, 6);
   assert.equal(s.viewerCount, 1234);

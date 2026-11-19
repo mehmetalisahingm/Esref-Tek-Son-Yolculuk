@@ -11,13 +11,10 @@ const PUBLIC = path.join(DIR, 'public');
 const THREE_BUILD = path.join(DIR, 'node_modules', 'three', 'build');
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '127.0.0.1';
-const MAX_PEOPLE = 100;
 const MAX_EVENTS = 40;
 const LIKE_MILESTONE = 1000;
 // Official Kanal D Eşref Tek character profile picture, used as a remote default.
 const DEFAULT_PORTRAIT_URL = 'https://image.kanald.com.tr/i/kanald/100/200x286/6864d72ccf62483f9cfa5def.jpg';
-// 0 = the single biggest gifter carries the portrait; raise it to require a minimum score.
-const PORTRAIT_COST = 0;
 const savedPortrait = ['jpg', 'png', 'webp'].find(ext => existsSync(path.join(PUBLIC, `portrait-custom.${ext}`)));
 const MUSIC_EXTS = ['mp3', 'm4a', 'ogg', 'wav'];
 const MAX_MUSIC_BYTES = 15 * 1024 * 1024;
@@ -52,7 +49,7 @@ const seedComments = ['Başın sağ olsun Eşref','Efsaneler ölmez 🖤','Rüya
 
 const state = {
   username: '', demo: true,
-  carriers: Array(6).fill(null), portraitBearer: null, portraitCost: PORTRAIT_COST,
+  carriers: Array(6).fill(null), portraitBearer: null,
   portraitUrl: savedPortrait ? `/portrait-custom.${savedPortrait}` : DEFAULT_PORTRAIT_URL,
   people: [], events: [], gifts: 0, giftPoints: 0, totalChats: 0, likes: 0, follows: 0, shares: 0,
   viewerCount: null, audio: { music: true, sfx: true, volume: 0.8, musicVolume: 0.7, sfxVolume: 0.6 },
@@ -71,7 +68,7 @@ function safeIdentity(name, id) {
   return { name: cleanName, id: String(id || cleanName.toLocaleLowerCase('tr-TR')).slice(0, 90) };
 }
 function makePerson(name, id, demo = false) {
-  return { name, id, demo, giftCount: 0, giftPoints: 0, likes: 0, firstLike: 0, joined: Date.now(), lastGift: 0, comment: '', commentAt: 0 };
+  return { name, id, demo, giftCount: 0, giftPoints: 0, likes: 0, followed: false, joined: Date.now(), lastGift: 0, comment: '', commentAt: 0 };
 }
 function event(type, name, detail = '', extra = {}) {
   state.events.unshift({ id: crypto.randomUUID(), type, name: String(name).slice(0, 26), detail: String(detail).slice(0, 80), time: Date.now(), ...extra });
@@ -79,7 +76,7 @@ function event(type, name, detail = '', extra = {}) {
 }
 function leaderboard() {
   return state.people.filter(p => p.giftPoints > 0 || p.giftCount > 0)
-    .sort((a, b) => b.giftPoints - a.giftPoints || b.giftCount - a.giftCount || a.lastGift - b.lastGift)
+    .sort((a, b) => b.giftCount - a.giftCount || a.joined - b.joined)
     .slice(0, 5).map(p => ({ id: p.id, name: p.name, giftPoints: p.giftPoints, giftCount: p.giftCount }));
 }
 function snapshot() {
@@ -87,7 +84,7 @@ function snapshot() {
     connected: isLive(), connecting: ['connecting', 'reconnecting', 'waiting'].includes(bridge.status.state), connectionMessage: bridge.status.state === 'idle' && state.demo ? 'Demo modu' : bridge.status.message,
     bridge: bridgeSnapshot(),
     username: state.username, demo: state.demo, carriers: state.carriers,
-    portraitBearer: state.portraitBearer, portraitCost: state.portraitCost, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
+    portraitBearer: state.portraitBearer, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
     likes: state.likes, follows: state.follows, shares: state.shares, viewerCount: state.viewerCount,
     leaderboard: leaderboard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
@@ -111,12 +108,6 @@ function findOrAdd(name, id, demo = false) {
   }
   person = makePerson(who.name, who.id, demo);
   state.people.push(person);
-  if (state.people.length > MAX_PEOPLE) {
-    // Drop the oldest passive viewer; never a carrier or the portrait bearer, gifters last.
-    let outside = state.people.findIndex(p => p.giftCount === 0 && !isOnStage(p.id) && p !== person);
-    if (outside < 0) outside = state.people.findIndex(p => !isOnStage(p.id) && p !== person);
-    if (outside >= 0) state.people.splice(outside, 1);
-  }
   return { person, isNew: true };
 }
 const isOnStage = id => state.carriers.some(c => c?.id === id) || state.portraitBearer?.id === id;
@@ -134,7 +125,7 @@ export function chat(name, id, demo = false, comment = '') {
 }
 export function join(name, id, kind = 'member') {
   const { person, isNew } = personFor(name, id, false);
-  if (kind === 'follow') { state.follows++; event('follow', person.name, 'Takip etti · korteje katıldı'); }
+  if (kind === 'follow') { person.followed = true; state.follows++; event('follow', person.name, 'Takip etti · mum yaktı 🕯️'); }
   else if (kind === 'share') { state.shares++; event('share', person.name, 'Yayını paylaştı'); }
   else if (isNew) event('join', person.name, 'Korteje katıldı');
   emit();
@@ -144,41 +135,35 @@ export function like(name, id, count = 1, demo = false) {
   const { person, isNew } = personFor(name, id, demo);
   const n = Math.min(1000, Math.max(1, Math.trunc(Number(count) || 1)));
   const before = state.likes;
-  if (!person.likes) person.firstLike = Date.now();
   person.likes += n;
   state.likes += n;
-  if (isNew || person.likes === n) event('like', person.name, 'Mum yaktı 🕯️', { count: n });
-  updateCarriers();
+  rankCarriers();
+  if (isNew || person.likes === n) event('like', person.name, 'Yayını beğendi', { count: n });
   if (Math.floor(before / LIKE_MILESTONE) !== Math.floor(state.likes / LIKE_MILESTONE)) {
-    event('milestone', 'KORTEJ', `${(Math.floor(state.likes / LIKE_MILESTONE) * LIKE_MILESTONE).toLocaleString('tr-TR')} mum yandı`);
+    event('milestone', 'KORTEJ', `${(Math.floor(state.likes / LIKE_MILESTONE) * LIKE_MILESTONE).toLocaleString('tr-TR')} beğeni geldi`);
   }
   emit();
   return person;
 }
-// The biggest gifter of this session carries Eşref Tek's portrait. On a tie the current holder keeps it.
+// The portrait goes to the viewer with the most gifts. Ties retain arrival order.
 function choosePortraitBearer() {
-  const eligible = state.people.filter(p => p.giftCount > 0 && p.giftPoints >= state.portraitCost);
-  eligible.sort((a, b) => b.giftPoints - a.giftPoints || b.giftCount - a.giftCount || a.lastGift - b.lastGift);
+  const winner = state.people.filter(p => p.giftCount > 0)
+    .sort((a, b) => b.giftCount - a.giftCount || a.joined - b.joined)[0] || null;
   const previous = state.portraitBearer;
-  let winner = eligible[0] || null;
-  if (winner && previous && winner !== previous && eligible.includes(previous) && previous.giftPoints === winner.giftPoints && previous.giftCount === winner.giftCount) winner = previous;
   if (previous?.id === winner?.id) return false;
   state.portraitBearer = winner;
-  if (winner) event('portrait', winner.name, `Fotoğrafı taşıyor · ${winner.giftPoints.toLocaleString('tr-TR')} puan`, { points: winner.giftPoints, previous: previous?.name || '' });
-  else if (previous) event('rotate', previous.name, 'Fotoğraf taşıyıcılığı sona erdi');
+  if (winner) event('portrait', winner.name, `Fotoğrafı taşıyor · ${winner.giftCount} hediye`, { count: winner.giftCount, points: winner.giftPoints, previous: previous?.name || '' });
   return true;
 }
-// The six viewers with the most likes carry the coffin. People who stay in the top six keep their
-// shoulder, newcomers take the shoulders that were freed, so the line-up does not reshuffle on every like.
-function updateCarriers() {
-  const current = new Set(state.carriers.filter(Boolean).map(p => p.id));
-  const bearer = state.portraitBearer?.id;
-  const ranked = state.people.filter(p => p.likes > 0 && p.id !== bearer)
-    .sort((a, b) => b.likes - a.likes || (current.has(b.id) - current.has(a.id)) || a.firstLike - b.firstLike)
-    .slice(0, 6);
+function rankCarriers() {
+  // Retain existing shoulder positions while the viewer remains in the top six.
+  const old = state.carriers.filter(Boolean);
+  const order = new Map(old.map((p, i) => [p.id, i]));
+  const ranked = state.people.filter(p => p.likes > 0 && p.id !== state.portraitBearer?.id)
+    .sort((a, b) => b.likes - a.likes || (order.get(a.id) ?? 1000000) - (order.get(b.id) ?? 1000000) || a.joined - b.joined).slice(0, 6);
   const keep = new Set(ranked.map(p => p.id));
-  const next = state.carriers.map(p => (p && keep.has(p.id) ? state.people.find(x => x.id === p.id) || p : null));
-  for (const p of state.carriers) if (p && !keep.has(p.id) && p.id !== bearer) event('rotate', p.name, 'Omzunu devretti · korteje geçti');
+  const next = state.carriers.map(p => p && keep.has(p.id) ? p : null);
+  for (const p of old) if (!keep.has(p.id) && p.id !== state.portraitBearer?.id) event('rotate', p.name, 'Omzunu devretti · korteje geçti');
   for (const p of ranked) {
     if (next.some(c => c?.id === p.id)) continue;
     const slot = next.indexOf(null);
@@ -200,13 +185,10 @@ export function gift(name, id, giftName = 'Hediye', amount = 1, demo = false, un
   state.gifts += value;
   state.giftPoints += points;
   const photoChanged = choosePortraitBearer();
-  const meta = { giftName: label, amount: value, points, slot: -1 };
-  if (state.portraitBearer?.id === person.id) {
-    if (!photoChanged) event('gift', person.name, `${label} · fotoğraf taşıyıcısı +${points} puan`, { ...meta, holder: true });
-  } else {
-    event('gift', person.name, `${label} · fotoğraf yarışında ${person.giftPoints.toLocaleString('tr-TR')} puan`, meta);
+  rankCarriers();
+  if (!photoChanged || state.portraitBearer?.id !== person.id) {
+    event('gift', person.name, `${label} · ${value} hediye`, { giftName: label, amount: value, points, slot: -1 });
   }
-  if (photoChanged) updateCarriers();
   emit();
   return person;
 }
@@ -219,22 +201,21 @@ function clearState(demo) {
 function demoSeed() {
   clearState(true);
   const carriers = ['mehmet.ali', 'utku.61', 'mertcan', 'feyza', 'enes.34', 'melis'];
-  const carrierLikes = [180, 150, 120, 95, 70, 52];
   carriers.forEach((n, i) => {
     const { person: p } = findOrAdd(n, `demo-carrier-${i}`, true);
-    p.likes = carrierLikes[i]; p.firstLike = Date.now() - (6 - i) * 9000;
-    state.carriers[i] = p;
+    p.giftCount = 1 + i; p.giftPoints = 5 + i * 30; p.lastGift = Date.now() - (6 - i) * 9000;
+    p.likes = 100 - i * 10;
   });
   seedUsers.slice(0, 26).forEach((n, i) => {
     const { person: p } = findOrAdd(n, `demo-crowd-${i}`, true);
     if (i < 6) { p.comment = seedComments[i % seedComments.length]; p.commentAt = Date.now() - i * 1500; }
-    p.likes = (i * 7) % 40; if (p.likes) p.firstLike = Date.now() - 60000 + i;
-    if (i === 3 || i === 9) { p.giftCount = 2; p.giftPoints = i === 3 ? 299 : 120; p.lastGift = Date.now() - 20000; }
+    p.likes = (i * 7) % 40;
   });
   const { person: portrait } = findOrAdd('efsane.dostu', 'demo-portrait', true);
-  portrait.giftCount = 3; portrait.giftPoints = 750; portrait.lastGift = Date.now(); state.portraitBearer = portrait;
+  portrait.giftCount = 10; portrait.giftPoints = 750; portrait.lastGift = Date.now(); state.portraitBearer = portrait;
+  rankCarriers();
   state.likes = 846;
-  state.events = [{ id: crypto.randomUUID(), type: 'info', name: 'DEMO', detail: 'Beğeni → tabut · Hediye → fotoğraf', time: Date.now() }];
+  state.events = [{ id: crypto.randomUUID(), type: 'info', name: 'DEMO', detail: 'En çok hediye gönderen fotoğrafı taşır', time: Date.now() }];
   emit();
 }
 function readBody(req, maxBytes = 16384) {
@@ -367,13 +348,6 @@ const server = http.createServer(async (req, res) => {
         case '/api/gift': { const p = gift(body.name, body.id, body.giftName || 'Gül', body.amount || 1, false, body.unitPoints ?? 1); return respond(res, 200, { ok: true, person: p }); }
         case '/api/like': { const p = like(body.name, body.id, body.count || 1, false); return respond(res, 200, { ok: true, person: p }); }
         case '/api/follow': { const p = join(body.name, body.id, 'follow'); return respond(res, 200, { ok: true, person: p }); }
-        case '/api/settings': {
-          const cost = Number(body.portraitCost);
-          if (!Number.isInteger(cost) || cost < 0 || cost > 100000) return respond(res, 400, { error: 'Eşik 0–100.000 arasında olmalı' });
-          state.portraitCost = cost; choosePortraitBearer(); updateCarriers();
-          event('info', 'AYAR', `Fotoğraf taşıma eşiği ${cost.toLocaleString('tr-TR')} puan`); emit();
-          return respond(res, 200, { ok: true, portraitCost: cost });
-        }
         case '/api/audio': {
           const a = state.audio;
           if (typeof body.music === 'boolean') a.music = body.music;

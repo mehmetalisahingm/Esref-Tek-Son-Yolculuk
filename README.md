@@ -1,6 +1,6 @@
 # SON YOLCULUK — Eşref Tek interaktif TikTok LIVE oyunu
 
-Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. Hediye atan altı farklı izleyici tabutu taşır; yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir. Yeni bir hediye gönderen geldiğinde en uzun süredir hediye göndermeyen taşıyıcı arkaya geçer.
+Sinematik cenaze korteji: **en önde Eşref Tek fotoğrafını taşıyan tek bir özel izleyici, arkasında altı tabut taşıyıcısı**, onların arkasında diğer izleyiciler. En çok beğeni atan altı izleyici tabutu, en çok hediye gönderen izleyici fotoğrafı taşır. Yorum, takip ve odaya giriş bilgisi gelen kişiler arkadaki kalabalığa eklenir.
 
 Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel Kanal D'nin resmî Eşref Tek oyuncu profilindeki portredir (kaynak: https://www.kanald.com.tr/esref-ruya/oyuncular/cagatay-ulusoy). Bu görsel projede paketlenmez; hakları ilgili hak sahiplerine aittir. Yayında kullanmadan önce gerekli izinleri kontrol et. İstersen kontrol panelinden haklarına sahip olduğun bir fotoğrafı yükleyerek değiştir. Dizi müziği ve video görüntüsü kullanılmaz; arka plan müziği kamu malı bir eserin canlı sentezidir.
 
@@ -10,10 +10,10 @@ Bu bir **fan projesidir**. Fotoğraf için varsayılan uzaktan yüklenen görsel
 - **Kendi şarkın:** kontrol panelinden MP3 / M4A / OGG / WAV yükle (en fazla 15 MB). Overlay döngüde çalar, hediye ve taht duyurularında kısa süre kısar. Ana ses, müzik ve efekt seviyeleri ayrı ayarlanır. Dosya yalnızca bilgisayarda (`public/music-custom.*`) kalır, repoya gitmez. Telifli şarkıları TikTok canlı yayında sessize alabilir.
 - **Varsayılan müzik:** şarkı yüklenmezse Chopin'in Cenaze Marşı (1839, kamu malı) tarayıcıda canlı sentezlenir — kayıt kullanılmadığı için TikTok'un telif filtresine takılmaz. Hediye, taht değişimi, takip, beğeni ve katılım için ayrı efektler var. Ses ayarları kontrol panelinden overlay'e anında gider.
 - **Yorum balonları:** yorum yazan izleyicinin sözü 7 saniye boyunca sahnede kendi karakterinin üstünde görünür.
-- **Beğeni = mum:** beğenen izleyicinin karakteri elinde yanan mumla yürür; her 1.000 beğenide sahnede kutlama olur.
+- **Takip = mum:** takip eden izleyicinin karakteri elinde yanan mumla yürür. Beğeniler tabut taşıma sıralamasını belirler; her 1.000 beğenide kutlama olur.
 - **Hediye alarmları:** altın bant, parıltı patlaması ve gül yağmuru. Büyük hediyeler daha büyük gösterilir.
 - **Taht değişimi:** fotoğraf taşıyıcısı değişince tam ekran altın ışınlı duyuru.
-- **Rekabet:** ilk 3 hediye sıralaması ve "@x tahta 251 puan uzakta" ilerleme çubuğu.
+- **Rekabet:** ilk 3 hediye adedi sıralaması ve fotoğraf liderliği için kalan hediye sayısı.
 - **Dönen çağrı şeridi:** yorum, beğeni, takip ve hediyenin ne işe yaradığını sırayla anlatır.
 - **Anma anı:** overlay'de 2,5 dakikada bir, ortalık sakinken fotoğraflı "Hatırası kalbimizde" kartı ve mum yakma çağrısı çıkar.
 - **Işıltı:** mumlar, fenerler ve altın detaylar yumuşakça parlar. Zayıf bilgisayarda `&nobloom=1` ile kapatılabilir.
@@ -52,9 +52,7 @@ Dikey yayın için **Tarayıcı/Browser Source** ekle:
 - FPS: `30` veya `60`
 - OBS'de **"Sesi OBS üzerinden kontrol et"** seçeneğini açarsan müzik yayına gider.
 
-Düzen TikTok'a göre ayarlı: en üstteki şerit TikTok'un kendi adı/izleyici bilgisine, alt üçte biri de yorumlara boş bırakılır; kurallar, fotoğraf taşıyıcısı ve tabut taşıyıcıları başlığın hemen altında durur.
-
-Ek adres seçenekleri: `&cam=0..3` başlangıç kamerasını seçer, `&fallback=1` hafif 2.5D çizimi zorlar.
+Ek adres seçenekleri: `&compact=1` alt paneli küçültür (TikTok'un yorum sütunu ekranın altını kapatır), `&cam=0..3` başlangıç kamerasını seçer, `&fallback=1` hafif 2.5D çizimi zorlar.
 
 Overlay sesi otomatik başlatamazsa sağ üstte **🔊 Sesi başlat** düğmesi çıkar; OBS'de kaynağa sağ tıklayıp **Etkileşim** ile bir kez tıkla.
 
@@ -76,22 +74,25 @@ Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve iz
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
 **Olaylar oyunda ne yapar?**
-- **Hediye:** gönderenin hediye puanına eklenir; en çok hediye puanı olan kişi Eşref Tek'in fotoğrafını taşır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
-- **Fotoğraf taşıyıcısı:** TikTok'un bildirdiği elmas değeri × adet, kişinin hediye puanına eklenir. En çok puanı olan izleyici fotoğrafı taşır (eşitlikte mevcut taşıyıcı kalır). Panelden en az puan şartı koyabilirsin; varsayılan 0, yani ilk hediyeden itibaren yarış başlar. Bu değer gerçek para ya da cüzdan bilgisi değildir.
+- **Hediye:** en çok hediye gönderen fotoğrafı taşır. Kombo hediyeler (ör. art arda güller) toplam adet olarak bir kez sayılır, aynı hediye iki kez gelirse tekrar sayılmaz.
+- **Fotoğraf taşıyıcısı:** toplam hediye adedi en yüksek izleyici fotoğrafı taşır; hediye puanı bu sıralamayı belirlemez.
 - **Yorum:** kişi korteje katılır, yorumu sahnede balon olarak görünür.
-- **Beğeni:** kişi korteje katılır ve tek beğenide bile elinde mum yanar. En çok beğeni atan 6 kişi tabutu taşır.
-- **Takip / paylaşım:** sahnede duyurulur, kişi korteje katılır.
-- **Katılım:** TikTok'un bildirdiği izleyiciler kortejde yürür (TikTok her sessiz izleyiciyi bildirmez).
+- **Beğeni:** kişi korteje katılır; beğeni sayısı tabut taşıma sıralamasını belirler.
+- **Takip:** kişi korteje katılır ve elinde mum yanar. **Paylaşım:** sahnede duyurulur ve kişi korteje katılır.
+- **Katılım:** TikTok'un bildirdiği izleyiciler takip şartı olmadan korteje katılır; yeni gelenler sahnenin ön kısmında gösterilir. TikTok her sessiz izleyiciyi ayrı ayrı bildirmez.
 - **İzleyici sayısı:** sağ üstte görünür.
 
 Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değişikliklerde bozulabilir. Yayından önce kısa bir deneme yap. Proje TikTok hesap şifreni istemez ve saklamaz.
 
 ## Yayın kuralları
 
-- **Tabut:** en çok beğeni atan **6** kişi tabutu taşır. İlk 6'da kalan kişi omzunu korur; ilk 6'ya giren yeni kişi, ilk 6'dan düşen kişinin boşalttığı omza geçer. Düşen kişi kortejde yürümeye devam eder.
-- **Mum:** bir kez beğenen herkesin elinde mum yanar.
-- **Fotoğraf:** en çok hediye puanı olan **1** kişi önden Eşref Tek'in fotoğrafını taşır. Bu kişi aynı anda tabut taşıyıcısı olmaz; boşalan omuz bir sonraki en çok beğenene geçer.
-- **Kortej:** yorum yazan, beğenen, takip eden ve katılan herkes arkada yürür (sunucuda en fazla 100 kullanıcı, çizimde ilk 60 kişi).
+- **1 ayrı fotoğraf taşıyıcısı** vardır. Önden yürür, omuzda tabut taşıyan altı kişiden ayrı bir karakterdir.
+- Toplam **6** tabut taşıyıcısı yeri vardır. Boş yerlerde NPC (bekleyen karakter) bulunur.
+- En çok beğeni atan altı izleyici tabutu taşır; sıralama yeni beğenilerle güncellenir.
+- En çok hediye gönderen izleyici fotoğrafı taşır; hediye adedi esas alınır.
+- Fotoğraf taşıyıcısı tabut taşıyamaz; sıradaki beğeni sahibi boş yere geçer.
+- Eşit beğenide mevcut taşıyıcı önceliklidir; hediye eşitliğinde önce katılan izleyici önceliklidir.
+- Diğer katılımcılar arkadaki kalabalıkta yürür; çizimde performans için ilk 80 kişi gösterilir.
 - Aynı kullanıcı tekrar yorum yazdığında ikinci avatar oluşmaz. Kullanıcılar kimliğe göre eşleştirilir.
 - Demo başlangıcında sahnede örnek kullanıcılar bulunur. Gerçek yayına bağlanırken demo kullanıcıları temizlenir.
 
@@ -128,7 +129,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 32 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 29 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 

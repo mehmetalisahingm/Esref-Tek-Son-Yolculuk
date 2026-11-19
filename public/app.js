@@ -7,7 +7,7 @@ const overlay = qs.has('overlay');
 const forceFallback = qs.has('fallback');
 if (overlay) document.body.classList.add('overlay');
 
-const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], bridge: null, audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
+const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], bridge: null, audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
 let state = initial;
 let stage = null;
 let firstState = true;
@@ -95,21 +95,21 @@ function handleEvent(e) {
   switch (e.type) {
     case 'gift': {
       const big = (e.points || 0) >= 100 || (e.amount || 1) >= 10;
-      const where = String(e.detail || '').split(' · ').slice(1).join(' · ');
-      queueAlert({ kind: 'gift', big, icon: '🎁', title: `${at(e.name)} ${e.giftName || 'hediye'}${e.amount > 1 ? ` ×${e.amount}` : ''}`, sub: where });
-      audio.play('gift', { big });
+      const where = 'fotoğraf için yarışıyor';
+      queueAlert({ kind: 'gift', big, icon: '🎁', title: `${at(e.name)} ${e.giftName || 'hediye'}${e.amount > 1 ? ` ×${e.amount}` : ''}`, sub: `${where}${e.points ? ` · +${fmt(e.points)} puan` : ''}` });
+      audio.play(e.newCarrier ? 'carrier' : 'gift', { big });
       break;
     }
     case 'portrait':
-      queueAlert({ kind: 'portrait', title: at(e.name), sub: e.previous ? `${at(e.previous)} tahtı kaptırdı · ${fmt(e.points)} puan` : `${fmt(e.points)} puanla Eşref Tek'in fotoğrafını taşıyor` });
+      queueAlert({ kind: 'portrait', title: at(e.name), sub: e.previous ? `${at(e.previous)} tahtı kaptırdı · ${fmt(e.count)} hediye` : `${fmt(e.count)} hediye ile Eşref Tek'in fotoğrafını taşıyor` });
       audio.play('portrait');
       break;
     case 'follow':
-      queueAlert({ kind: 'follow', icon: '💗', title: `${at(e.name)} takip etti`, sub: 'Korteje hoş geldin' });
+      queueAlert({ kind: 'follow', icon: '🕯️', title: `${at(e.name)} takip etti`, sub: 'Kortejde bir mum yaktı' });
       audio.play('follow');
       break;
     case 'milestone':
-      queueAlert({ kind: 'milestone', big: true, icon: '🕯️', title: e.detail, sub: 'Beğenmeye devam, kortej aydınlansın' });
+      queueAlert({ kind: 'milestone', big: true, icon: '💗', title: e.detail, sub: 'Beğenmeye devam, tabutu omuzla' });
       audio.play('milestone');
       break;
     case 'like': floatUp(Math.random() > .5 ? '🕯️' : '🤍'); audio.play('like'); break;
@@ -147,7 +147,7 @@ function updateCarriers(s) {
     const handle = el.querySelector('.carrier-handle'), gifts = el.querySelector('.carrier-gifts');
     const name = p ? at(p.name) : 'Boş omuz · beğen';
     if (handle.textContent !== name) { handle.textContent = name; if (p && !firstState) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }
-    gifts.textContent = p ? `❤️${short(p.likes || 0)}` : '❤️';
+    gifts.textContent = p ? `💗${short(p.likes)}` : '💗';
   });
 }
 function updateLeaderboard(s) {
@@ -159,25 +159,21 @@ function updateLeaderboard(s) {
     const e = document.createElement('span'); e.className = 'leader';
     const m = document.createElement('i'); m.textContent = medals[i];
     const n = document.createElement('b'); n.textContent = at(p.name);
-    const v = document.createElement('em'); v.textContent = short(p.giftPoints);
+    const v = document.createElement('em'); v.textContent = short(p.giftCount);
     e.append(m, n, v); root.append(e);
   });
 }
 function updateThrone(s) {
-  const holder = s.portraitBearer, lb = s.leaderboard || [], cost = s.portraitCost;
+  const holder = s.portraitBearer, lb = s.leaderboard || [];
   text('#portrait-holder', holder ? at(holder.name) : 'Taht boş');
-  text('#holder-points', holder ? short(holder.giftPoints) : '—');
+  text('#holder-points', holder ? short(holder.giftCount) : '—');
   $('#throne-card').classList.toggle('vacant', !holder);
   let pct = 0, line;
   if (holder) {
-    const target = holder.giftPoints + 1, ch = lb.find(p => p.id !== holder.id);
-    if (ch) { pct = ch.giftPoints / target; line = `${at(ch.name)} fotoğrafa ${fmt(target - ch.giftPoints)} puan uzakta`; }
-    else line = `Fotoğrafı almak için ${fmt(target)} hediye puanı gönder`;
-  } else {
-    const top = lb[0];
-    if (top && cost > 0) { pct = top.giftPoints / cost; line = `${at(top.name)} · ${fmt(top.giftPoints)} / ${fmt(cost)} puan`; }
-    else line = cost > 0 ? `İlk ${fmt(cost)} puanı toplayan fotoğrafı taşır` : 'İlk hediyeyi atan fotoğrafı taşır';
-  }
+    const target = holder.giftCount + 1, ch = lb.find(p => p.id !== holder.id);
+    if (ch) { pct = ch.giftCount / target; line = `${at(ch.name)} liderliğe ${fmt(target - ch.giftCount)} hediye uzakta`; }
+    else line = `Liderliği almak için ${fmt(target)} hediye gönder`;
+  } else line = 'İlk hediyeyi gönderen fotoğrafı taşır';
   text('#challenge-text', line);
   $('#challenge-bar').style.width = `${Math.max(3, Math.min(100, pct * 100)).toFixed(1)}%`;
   for (const img of [$('#portrait-thumb'), $('#takeover-photo')]) if (s.portraitUrl && img.getAttribute('src') !== s.portraitUrl) img.src = s.portraitUrl;
@@ -197,7 +193,7 @@ function updateActivity(s) {
 }
 // ——— Live bridge status ———
 let bridgeMode = null;
-const bridgeLabels = { chat: '💬 yorum', gift: '🎁 hediye', like: '🕯️ beğeni', follow: '💗 takip', member: '↗ katılım', share: '↻ paylaşım' };
+const bridgeLabels = { chat: '💬 yorum', gift: '🎁 hediye', like: '💗 beğeni', follow: '🕯️ takip', member: '↗ katılım', share: '↻ paylaşım' };
 function setBridgeMode(mode) {
   bridgeMode = mode;
   document.querySelectorAll('.mode-tabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
@@ -268,13 +264,12 @@ function showState(next) {
   const crowd = next.people.length;
   text('#viewer-count', short(next.viewerCount ?? crowd));
   text('#like-count', short(next.likes || 0));
-  text('#candle-total', short(next.likes || 0));
+  text('#candle-total', short((next.people || []).filter(p => p.followed).length));
   text('#stats-audience', fmt(crowd));
   text('#stats-carriers', `${next.carriers.filter(Boolean).length} / 6`);
   text('#stats-gifts', fmt(next.gifts));
   text('#stats-points', `${fmt(next.giftPoints)} puan`);
   text('#stats-likes', fmt(next.likes || 0));
-  if (document.activeElement !== $('#portrait-cost')) $('#portrait-cost').value = next.portraitCost;
   updateCarriers(next); updateLeaderboard(next); updateThrone(next); updateStatus(next); updateAudioPanel(next);
   if (!overlay) updateActivity(next);
   stage?.update(next);
@@ -289,7 +284,7 @@ let memorialIndex = 0;
 function memorialMoment() {
   if (!overlay && !previewOn && !qs.has('memorial')) return;
   if (alertBusy || alertQueue.length) return;
-  queueAlert({ kind: 'memorial', title: 'Eşref Tek', sub: memorialLines[memorialIndex++ % memorialLines.length], cta: '🕯️ Beğen, onun için bir mum yak' });
+  queueAlert({ kind: 'memorial', title: 'Eşref Tek', sub: memorialLines[memorialIndex++ % memorialLines.length], cta: '🕯️ Takip et, onun için bir mum yak' });
   audio.play('milestone');
 }
 setTimeout(memorialMoment, Number(qs.get('memorialFirst') || 30000));
@@ -300,9 +295,10 @@ let ctaIndex = 0;
 function rotateCta() {
   const lines = [
     '❤️ En çok beğenen 6 kişi tabutu taşır',
-    '🕯️ 1 beğeni = elinde 1 mum',
+    '🕯️ Takip eden mum yakar',
     "🎁 En çok hediye atan Eşref Tek'in fotoğrafını taşır",
     '💬 Yorum yaz → korteje katıl, sözün sahnede görünsün',
+    '🕯️ Takip et → kortejde mum yak',
   ];
   const el = $('#cta-text');
   el.classList.add('swap');
@@ -326,12 +322,11 @@ on('#like-btn', () => api('like', { name: inputName(), count: 15 }));
 on('#follow-btn', () => api('follow', { name: inputName() }));
 on('#gift-btn', () => api('gift', { name: inputName(), giftName: 'Gül', amount: 1, unitPoints: 1 }));
 on('#portrait-test-btn', async () => {
-  const name = inputName(); const rival = state.portraitBearer?.giftPoints || 0;
+  const name = inputName(); const rival = state.portraitBearer?.giftCount || 0;
   const person = state.people.find(p => p.name === name);
-  const required = Math.min(100000, Math.max(10, state.portraitCost, rival + 1) - (person?.giftPoints || 0));
-  await api('gift', { name, giftName: 'Aslan', amount: 1, unitPoints: Math.max(1, required) });
+  const required = Math.max(1, Math.min(10000, rival + 1 - (person?.giftCount || 0)));
+  await api('gift', { name, giftName: 'Gül', amount: required, unitPoints: 1 });
 });
-on('#save-cost-btn', async () => { const portraitCost = Number($('#portrait-cost').value); await api('settings', { portraitCost }); showToast(`👑 Fotoğraf eşiği: ${fmt(portraitCost)} puan`); });
 $('#portrait-upload').addEventListener('change', wrap(async () => {
   const file = $('#portrait-upload').files?.[0]; if (!file) return;
   if (file.size > 2300000) throw new Error('Fotoğraf 2 MB altında olmalı');

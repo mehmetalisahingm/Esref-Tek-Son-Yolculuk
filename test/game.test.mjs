@@ -32,37 +32,23 @@ test('a comment joins the crowd only once',async()=>{
   await post('chat',{name:'tester',id:'viewer-test'});
   assert.equal((await getState()).people.length,size);
 });
-test('the six biggest likers carry the coffin; a new top liker takes the weakest shoulder',async()=>{
-  const before=await getState();
-  const weakest=before.carriers.reduce((m,p)=>p.likes<m.likes?p:m);
-  const slot=before.carriers.findIndex(p=>p.id===weakest.id);
-  const kept=before.carriers.filter(p=>p.id!==weakest.id).map(p=>[p.id,before.carriers.indexOf(p)]);
-  await post('like',{name:'begenici',id:'top-liker',count:weakest.likes+1});
-  const now=await getState();
-  assert.equal(now.carriers[slot].id,'top-liker');
-  for(const [id,i] of kept) assert.equal(now.carriers[i].id,id,'diğer taşıyıcılar omzunu korur');
-  assert.ok(now.people.some(p=>p.id===weakest.id),'düşen taşıyıcı kortejde kalır');
-  assert.equal(now.events.find(e=>e.type==='carrier').name,'begenici');
+test('six highest likers carry the coffin, including after a late surge',async()=>{
+  await post('reset');
+  for(let i=0;i<7;i++) await post('like',{name:`liker${i}`,id:`liker${i}`,count:i+1});
+  let s=await getState();
+  assert.deepEqual(s.carriers.map(p=>p.likes).sort((a,b)=>b-a),[7,6,5,4,3,2]);
+  const before = new Map(s.carriers.map((p, i) => [p.id, i]));
+  await post('like',{name:'liker0',id:'liker0',count:10});
+  s=await getState();
+  assert.ok(s.carriers.some(p=>p.id==='liker0'));
+  for (const p of s.carriers) if (p.id !== 'liker0') assert.equal(s.carriers.indexOf(p), before.get(p.id));
+  assert.equal(s.people.find(p=>p.id==='liker0').likes,11);
 });
-test('a gift does not take a shoulder; it counts towards the portrait',async()=>{
-  const carriers=(await getState()).carriers.map(p=>p.id);
-  await post('gift',{name:'gift-entrant',id:'new-gifter',giftName:'Gül',amount:2});
-  const now=await getState();
-  assert.deepEqual(now.carriers.map(p=>p.id),carriers);
-  assert.equal(now.gifts,2);
-});
-test('anyone who likes once holds a candle (likes are tracked per viewer)',async()=>{
-  await post('like',{name:'tek.mum',id:'one-like',count:1});
-  const p=(await getState()).people.find(x=>x.id==='one-like');
-  assert.equal(p.likes,1);
-});
-test('a repeat gift by the same user does not add another character',async()=>{
-  const n=(await getState()).people.length;
-  await post('gift',{name:'gift-entrant',id:'new-gifter',giftName:'Gül',amount:1});
-  const now=await getState();
-  assert.equal(now.people.length,n);
-  assert.equal(new Set(now.carriers.filter(Boolean).map(p=>p.id)).size,6);
-  assert.equal(now.gifts,3);
+test('gifts alone do not put a viewer on the coffin',async()=>{
+  await post('gift',{name:'gift-entrant',id:'new-gifter',amount:2});
+  const s=await getState();
+  assert.equal(s.portraitBearer.id,'new-gifter');
+  assert.ok(s.carriers.every(p=>p?.id!=='new-gifter'));
 });
 test('reset clears the procession and demo restores six carriers',async()=>{
   await post('reset');
@@ -79,38 +65,24 @@ test('web app HTML and graphics are served',async()=>{
   }
 });
 
-test('special portrait is an exclusive seventh role with a higher point threshold',async()=>{
+test('most gifts wins portrait and frees their coffin place for the next liker',async()=>{
   await post('reset');
-  await post('settings',{portraitCost:500});
-  await post('gift',{name:'small-gifter',id:'small',amount:2,unitPoints:4});
+  for(let i=0;i<7;i++) await post('like',{name:`p${i}`,id:`p${i}`,count:10-i});
+  await post('gift',{name:'p0',id:'p0',amount:1,unitPoints:1});
   let s=await getState();
-  assert.equal(s.portraitBearer,null);
-  assert.equal(s.people.find(p=>p.id==='small').giftPoints,8);
-  await post('gift',{name:'vip',id:'vip',amount:1,unitPoints:499});
-  s=await getState();assert.equal(s.portraitBearer,null);
-  await post('gift',{name:'vip',id:'vip',amount:1,unitPoints:1});
+  assert.equal(s.portraitBearer.id,'p0');
+  assert.deepEqual(new Set(s.carriers.map(p=>p.id)),new Set(['p1','p2','p3','p4','p5','p6']));
+  await post('gift',{name:'p1',id:'p1',amount:2,unitPoints:0});
   s=await getState();
-  assert.equal(s.portraitBearer.id,'vip');
-  assert.equal(s.portraitBearer.giftPoints,500);
-  assert.ok(s.carriers.every(p=>p?.id!=='vip'));
-  assert.ok(s.people.some(p=>p.id==='vip'));
+  assert.equal(s.portraitBearer.id,'p1');
+  assert.deepEqual(new Set(s.carriers.map(p=>p.id)),new Set(['p0','p2','p3','p4','p5','p6']));
+  assert.equal(new Set([...s.carriers.map(p=>p.id),s.portraitBearer.id]).size,7);
 });
-
-test('a higher spending viewer replaces portrait holder, without duplicate characters',async()=>{
-  await post('gift',{name:'vip2',id:'vip2',amount:1,unitPoints:550});
-  const s=await getState();
-  assert.equal(s.portraitBearer.id,'vip2');
-  assert.ok(s.carriers.every(p=>p?.id!=='vip2'));
-  const all=[...s.carriers.filter(Boolean).map(p=>p.id),s.portraitBearer.id];
-  assert.equal(new Set(all).size,all.length);
-  assert.ok(s.people.some(p=>p.id==='vip'));
-});
-
-test('raising the threshold vacates portrait role, lowering it selects highest points',async()=>{
-  await post('settings',{portraitCost:1000});
-  assert.equal((await getState()).portraitBearer,null);
-  await post('settings',{portraitCost:500});
-  assert.equal((await getState()).portraitBearer.id,'vip2');
+test('gift count determines the winner even if another gift has more points',async()=>{
+  await post('reset');
+  await post('gift',{name:'a',id:'a',amount:2,unitPoints:1});
+  await post('gift',{name:'b',id:'b',amount:1,unitPoints:1000});
+  assert.equal((await getState()).portraitBearer.id,'a');
   await post('demo');
 });
 
@@ -127,16 +99,27 @@ test('comments are stored for in-scene speech bubbles and do not duplicate viewe
   assert.equal(s.people.find(x=>x.id==='commenter').comment,'ikinci yorum');
 });
 
-test('likes light candles, count per person and add the liker to the procession',async()=>{
+test('likes count per person and add the liker to the procession',async()=>{
   const before=(await getState()).likes;
   await post('like',{name:'mumcu',id:'liker',count:25});
   await post('like',{name:'mumcu',id:'liker',count:5});
   const s=await getState();
   assert.equal(s.likes,before+30);
   assert.equal(s.people.find(p=>p.id==='liker').likes,30);
+  assert.equal(s.people.find(p=>p.id==='liker').followed,false);
 });
 
-test('leaderboard ranks gifters by points',async()=>{
+test('following lights a candle without changing the like ranking',async()=>{
+  await post('reset');
+  await post('like',{name:'mumcu',id:'follower',count:5});
+  await post('follow',{name:'mumcu',id:'follower'});
+  const s=await getState();
+  assert.equal(s.people.find(p=>p.id==='follower').followed,true);
+  assert.equal(s.people.find(p=>p.id==='follower').likes,5);
+  assert.equal(s.carriers[0].id,'follower');
+});
+
+test('leaderboard ranks gifters by gift count',async()=>{
   await post('reset');
   await post('gift',{name:'a',id:'lb-a',amount:1,unitPoints:5});
   await post('gift',{name:'b',id:'lb-b',amount:2,unitPoints:20});
@@ -232,22 +215,5 @@ test('static files cannot escape the public folder',async()=>{
   assert.notEqual(r.status,200);
   const v=await fetch(base+'/vendor/..%2fpackage.json');
   assert.notEqual(v.status,200);
-  await post('demo');
-});
-
-test('the biggest gifter carries the portrait and is never also a coffin carrier',async()=>{
-  await post('reset');
-  await post('settings',{portraitCost:0});
-  for(let i=0;i<6;i++) await post('like',{name:'l'+i,id:'liker-'+i,count:10+i});
-  await post('like',{name:'cömert',id:'generous',count:100});
-  let s=await getState();
-  assert.ok(s.carriers.some(p=>p?.id==='generous'));
-  await post('gift',{name:'cömert',id:'generous',giftName:'Aslan',amount:1,unitPoints:29999});
-  s=await getState();
-  assert.equal(s.portraitBearer.id,'generous');
-  assert.ok(s.carriers.every(p=>p?.id!=='generous'));
-  assert.equal(s.carriers.filter(Boolean).length,6,'boşalan omuz bir sonraki beğeniciye geçer');
-  await post('gift',{name:'rakip',id:'rival',amount:1,unitPoints:29999});
-  assert.equal((await getState()).portraitBearer.id,'generous','eşitlikte mevcut taşıyıcı kalır');
   await post('demo');
 });
