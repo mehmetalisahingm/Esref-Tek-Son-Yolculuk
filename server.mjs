@@ -23,6 +23,18 @@ const savedMusic = MUSIC_EXTS.find(ext => existsSync(path.join(PUBLIC, `music-cu
 const musicNameFile = path.join(PUBLIC, 'music-custom.name.txt');
 let savedMusicName = '';
 try { savedMusicName = savedMusic ? (await fs.readFile(musicNameFile, 'utf8')).slice(0, 80) : ''; } catch {}
+// Playlist slots are stored locally; never commit or fetch audio from YouTube.
+const savedPlaylist = [
+  { url: savedMusic ? `/music-custom.${savedMusic}` : '', name: savedMusic ? (savedMusicName || 'Yüklenen şarkı') : '' },
+  ...await Promise.all([2, 3].map(async slot => {
+    const stem = `music-custom-${slot}`;
+    const ext = MUSIC_EXTS.find(x => existsSync(path.join(PUBLIC, `${stem}.${x}`)));
+    if (!ext) return { url: '', name: '' };
+    let name = '';
+    try { name = (await fs.readFile(path.join(PUBLIC, `${stem}.name.txt`), 'utf8')).slice(0, 80); } catch {}
+    return { url: `/${stem}.${ext}`, name: name || `Şarkı ${slot}` };
+  })),
+];
 // Identify an uploaded audio file by its first bytes rather than trusting the browser's MIME type.
 function sniffAudio(b) {
   if (b.length < 12) return null;
@@ -42,7 +54,7 @@ const state = {
   portraitUrl: savedPortrait ? `/portrait-custom.${savedPortrait}` : DEFAULT_PORTRAIT_URL,
   people: [], events: [], gifts: 0, giftPoints: 0, totalChats: 0, likes: 0, follows: 0, shares: 0,
   viewerCount: null, audio: { music: true, sfx: true, volume: 0.8, musicVolume: 0.7, sfxVolume: 0.6 },
-  musicUrl: savedMusic ? `/music-custom.${savedMusic}` : '', musicName: savedMusic ? (savedMusicName || 'Yüklenen şarkı') : '', revision: 0,
+  musicUrl: savedPlaylist[0].url, musicName: savedPlaylist[0].name, musicPlaylist: savedPlaylist, revision: 0,
 };
 const clients = new Set();
 let nextId = 0;
@@ -80,7 +92,7 @@ function snapshot() {
     portraitBearer: state.portraitBearer, portraitCost: state.portraitCost, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
     likes: state.likes, follows: state.follows, shares: state.shares, viewerCount: state.viewerCount,
-    leaderboard: leaderboard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, revision: state.revision,
+    leaderboard: leaderboard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
   };
 }
 // Coalesce bursts (likes on a busy stream can arrive dozens per second) into ≤ 12 pushes per second.
@@ -404,24 +416,39 @@ const server = http.createServer(async (req, res) => {
           emit(); return respond(res, 200, { ok: true, audio: a });
         }
         case '/api/music': {
-          const match = /^data:[\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
+          const slot = body.slot === undefined ? 1 : Number(body.slot);
+          if (!Number.isInteger(slot) || slot < 1 || slot > 3) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
+          const match = /^data:[\\w/.+-]*;base64,([a-zA-Z0-9+/=]+)$/.exec(String(body.dataUrl || ''));
           if (!match) return respond(res, 400, { error: 'Şarkı dosyası okunamadı' });
           const data = Buffer.from(match[1], 'base64');
           if (!data.length || data.length > MAX_MUSIC_BYTES) return respond(res, 400, { error: 'Şarkı en fazla 15 MB olabilir' });
           const format = sniffAudio(data);
           if (!format) return respond(res, 400, { error: 'MP3, M4A, OGG veya WAV yükleyebilirsin' });
-          await fs.writeFile(path.join(PUBLIC, `music-custom.${format}`), data);
-          await Promise.all(MUSIC_EXTS.filter(ext => ext !== format).map(ext => fs.unlink(path.join(PUBLIC, `music-custom.${ext}`)).catch(() => {})));
-          state.musicName = cleanText(String(body.name || '').replace(/\.[a-z0-9]{2,4}$/i, ''), 60) || 'Yüklenen şarkı';
-          await fs.writeFile(musicNameFile, state.musicName).catch(() => {});
-          state.musicUrl = `/music-custom.${format}?v=${Date.now()}`; state.audio.music = true;
-          event('info', 'MÜZİK', `Şarkı: ${state.musicName}`); emit();
-          return respond(res, 200, { ok: true, musicUrl: state.musicUrl, musicName: state.musicName });
+          const stem = slot === 1 ? 'music-custom' : `music-custom-${slot}`;
+          await fs.writeFile(path.join(PUBLIC, `${stem}.${format}`), data);
+          await Promise.all(MUSIC_EXTS.filter(ext => ext !== format).map(ext => fs.unlink(path.join(PUBLIC, `${stem}.${ext}`)).catch(() => {})));
+          const name = cleanText(String(body.name || '').replace(/\\.[a-z0-9]{2,4}$/i, ''), 60) || `Şarkı ${slot}`;
+          await fs.writeFile(path.join(PUBLIC, `${stem}.name.txt`), name);
+          const url = `/${stem}.${format}?v=${Date.now()}`;
+          state.musicPlaylist[slot - 1] = { url, name };
+          if (slot === 1) { state.musicUrl = url; state.musicName = name; }
+          state.audio.music = true;
+          event('info', 'MÜZİK', `${slot}. sıraya eklendi: ${name}`); emit();
+          return respond(res, 200, { ok: true, slot, musicUrl: url, musicName: name, musicPlaylist: state.musicPlaylist });
         }
         case '/api/music-default': {
-          await Promise.all([...MUSIC_EXTS.map(ext => path.join(PUBLIC, `music-custom.${ext}`)), musicNameFile].map(f => fs.unlink(f).catch(() => {})));
-          state.musicUrl = ''; state.musicName = ''; event('info', 'MÜZİK', 'Varsayılan müziğe dönüldü'); emit();
-          return respond(res, 200, { ok: true });
+          const slot = body.slot === undefined ? null : Number(body.slot);
+          if (slot !== null && (!Number.isInteger(slot) || slot < 1 || slot > 3)) return respond(res, 400, { error: 'Şarkı sırası 1–3 olmalı' });
+          const slots = slot === null ? [1, 2, 3] : [slot];
+          await Promise.all(slots.flatMap(n => {
+            const stem = n === 1 ? 'music-custom' : `music-custom-${n}`;
+            return [...MUSIC_EXTS.map(ext => `${stem}.${ext}`), `${stem}.name.txt`]
+              .map(file => fs.unlink(path.join(PUBLIC, file)).catch(() => {}));
+          }));
+          for (const n of slots) state.musicPlaylist[n - 1] = { url: '', name: '' };
+          if (slot === null || slot === 1) { state.musicUrl = ''; state.musicName = ''; }
+          event('info', 'MÜZİK', slot === null ? 'Varsayılan müziğe dönüldü' : `${slot}. sıradaki şarkı kaldırıldı`); emit();
+          return respond(res, 200, { ok: true, musicPlaylist: state.musicPlaylist });
         }
         case '/api/portrait': {
           const source = String(body.dataUrl || '');
