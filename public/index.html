@@ -92,11 +92,32 @@
           <div class="stat-card"><span>MUM</span><strong id="stats-likes">0</strong><small>beğeni</small></div>
         </div>
 
-        <div class="panel"><div class="panel-heading"><div class="panel-icon green">◉</div><div><h3>TikTok LIVE Bağlantısı</h3><p>Gerçek yorum, beğeni ve hediyeleri dinle</p></div><span id="connection-pip" class="connection-pip">DEMO</span></div>
-          <label class="input-label" for="tiktok-user">TIKTOK KULLANICI ADI</label>
-          <div class="input-with-prefix"><span>@</span><input id="tiktok-user" type="text" autocomplete="off" placeholder="kullaniciadi" maxlength="26"></div>
+        <div class="panel bridge-panel"><div class="panel-heading"><div class="panel-icon green">◉</div><div><h3>TikTok LIVE Köprüsü</h3><p>Yayındaki yorum, hediye, beğeni ve takipleri oyuna taşır</p></div><span id="connection-pip" class="connection-pip">DEMO</span></div>
+          <div class="mode-tabs" role="tablist" aria-label="Köprü türü">
+            <button type="button" data-mode="direct" class="active" role="tab">Doğrudan</button>
+            <button type="button" data-mode="tikfinity" role="tab">TikFinity üzerinden</button>
+          </div>
+          <div class="mode-pane" data-pane="direct">
+            <label class="input-label" for="tiktok-user">TIKTOK KULLANICI ADI</label>
+            <div class="input-with-prefix"><span>@</span><input id="tiktok-user" type="text" autocomplete="off" placeholder="kullaniciadi" maxlength="26"></div>
+            <label class="input-label key-label" for="sign-key">İMZA ANAHTARI <span class="optional">isteğe bağlı</span> <b id="sign-key-state"></b></label>
+            <div class="setting-inline"><input id="sign-key" class="plain-input" type="password" autocomplete="off" placeholder="Euler Stream API anahtarı"><button id="sign-key-clear" class="small-button" type="button" hidden>Sil</button></div>
+            <p class="setting-note">Çoğu yayın anahtarsız bağlanır. "İmza limiti" hatası görürsen <a href="https://www.eulerstream.com" target="_blank" rel="noopener noreferrer">eulerstream.com</a>'dan ücretsiz anahtar alıp buraya yapıştır. Anahtar sadece bu bilgisayarda saklanır.</p>
+          </div>
+          <div class="mode-pane" data-pane="tikfinity" hidden>
+            <label class="input-label" for="tikfinity-url">TIKFINITY ADRESİ</label>
+            <input id="tikfinity-url" class="plain-input" type="text" autocomplete="off" value="ws://127.0.0.1:21213/">
+            <p class="setting-note">TikFinity masaüstü uygulamasını aç ve TikTok hesabınla yayınına bağla. Oyun, olayları TikFinity'nin bu bilgisayardaki yerel akışından okur. Doğrudan bağlantı TikTok tarafında takılırsa bu yol genelde çalışır.</p>
+          </div>
           <div class="button-row"><button id="connect-btn" class="button-primary">◉ Yayına Bağlan</button><button id="disconnect-btn" class="button-secondary" disabled>Bağlantıyı kes</button></div>
           <div class="connection-hint" id="connection-hint">Şu anda demo modu açık.</div>
+          <div class="bridge-diag" id="bridge-diag">
+            <div class="diag-line"><span class="diag-dot" id="diag-dot"></span><span id="diag-last">Henüz olay gelmedi</span><span id="diag-uptime"></span></div>
+            <div class="diag-chips">
+              <span title="Yorum">💬 <b id="diag-chat">0</b></span><span title="Hediye">🎁 <b id="diag-gift">0</b></span><span title="Beğeni">🕯️ <b id="diag-like">0</b></span><span title="Takip">💗 <b id="diag-follow">0</b></span><span title="Katılım">↗ <b id="diag-member">0</b></span><span title="Paylaşım">↻ <b id="diag-share">0</b></span>
+            </div>
+          </div>
+          <p class="setting-note">Önce TikTok'ta yayını aç, sonra bağlan. Yayın henüz açık değilse köprü bekler ve yayın başlayınca kendiliğinden bağlanır.</p>
         </div>
 
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">✧</div><div><h3>Canlı Etkileşim Testi</h3><p>Yayın açmadan her şeyi dene</p></div></div>

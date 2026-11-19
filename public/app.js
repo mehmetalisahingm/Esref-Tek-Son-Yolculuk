@@ -8,7 +8,7 @@ const forceFallback = qs.has('fallback');
 if (overlay) document.body.classList.add('overlay');
 if (qs.has('compact')) document.body.classList.add('compact');
 
-const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
+const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], bridge: null, audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
 let state = initial;
 let stage = null;
 let firstState = true;
@@ -195,20 +195,56 @@ function updateActivity(s) {
     mid.append(strong, detail); row.append(av, mid, time); root.append(row);
   }
 }
+// ——— Live bridge status ———
+let bridgeMode = null;
+const bridgeLabels = { chat: '💬 yorum', gift: '🎁 hediye', like: '🕯️ beğeni', follow: '💗 takip', member: '↗ katılım', share: '↻ paylaşım' };
+function setBridgeMode(mode) {
+  bridgeMode = mode;
+  document.querySelectorAll('.mode-tabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.mode-pane').forEach(p => { p.hidden = p.dataset.pane !== mode; });
+}
+function ago(ms) {
+  const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (sec < 60) return `${sec} sn önce`;
+  if (sec < 3600) return `${Math.floor(sec / 60)} dk önce`;
+  return `${Math.floor(sec / 3600)} sa önce`;
+}
+function updateBridgeTimes() {
+  const b = state.bridge; if (!b) return;
+  text('#diag-last', b.lastEventAt ? `Son olay: ${bridgeLabels[b.lastEventType] || b.lastEventType} · ${ago(b.lastEventAt)}` : b.state === 'connected' ? 'Bağlı · ilk olay bekleniyor' : 'Henüz olay gelmedi');
+  text('#diag-uptime', b.state === 'connected' && b.since ? `bağlı ${ago(b.since).replace(' önce', '')}` : '');
+}
+setInterval(updateBridgeTimes, 1000);
+let lastCounts = {};
 function updateStatus(s) {
+  const b = s.bridge || {};
   const badge = $('#broadcast-status'), pip = $('#connection-pip');
   badge.classList.toggle('live', s.connected);
   text('#broadcast-text', s.connected ? 'CANLI' : s.demo ? 'DEMO' : s.connecting ? 'BAĞLANIYOR' : 'HAZIR');
   text('#top-status', s.connected ? 'CANLI YAYINDA' : 'YAYINA HAZIR');
   pip.className = `connection-pip${s.connected ? ' connected' : ''}`;
-  pip.textContent = s.connected ? 'BAĞLI' : s.connecting ? 'BAĞLANIYOR' : s.demo ? 'DEMO' : 'KAPALI';
+  pip.textContent = s.connected ? 'BAĞLI' : b.state === 'waiting' ? 'YAYIN BEKLENİYOR' : s.connecting ? 'BAĞLANIYOR' : b.state === 'error' ? 'HATA' : s.demo ? 'DEMO' : 'KAPALI';
   text('#connection-hint', s.connectionMessage || 'TikTok bağlantısı kurulmadı.');
-  $('#connection-hint').classList.toggle('error', /(hata|eksik|failed|kesildi|koptu|offline|error|unavailable|sona erdi)/i.test(s.connectionMessage || ''));
-  $('#connect-btn').disabled = Boolean(s.connecting);
-  $('#connect-btn').textContent = s.connecting ? '◉ Bağlanıyor…' : s.connected ? '◉ Yeniden bağlan' : '◉ Yayına Bağlan';
-  $('#disconnect-btn').disabled = !(s.connected || s.connecting || /deneniyor/.test(s.connectionMessage || ''));
-  $('#demo-btn').disabled = s.connected;
-  if (s.username && document.activeElement !== $('#tiktok-user') && !$('#tiktok-user').value) $('#tiktok-user').value = s.username;
+  $('#connection-hint').classList.toggle('error', b.state === 'error' || b.state === 'reconnecting');
+  const busy = b.state === 'connecting';
+  $('#connect-btn').disabled = busy;
+  $('#connect-btn').textContent = busy ? '◉ Bağlanıyor…' : s.connected ? '◉ Yeniden bağlan' : '◉ Yayına Bağlan';
+  $('#disconnect-btn').disabled = !['connected', 'connecting', 'reconnecting', 'waiting'].includes(b.state);
+  $('#demo-btn').disabled = s.connected || s.connecting;
+  if (bridgeMode === null) setBridgeMode(b.savedMode || 'direct');
+  if (b.username && document.activeElement !== $('#tiktok-user') && !$('#tiktok-user').value) $('#tiktok-user').value = b.username;
+  if (b.tikfinityUrl && document.activeElement !== $('#tikfinity-url')) $('#tikfinity-url').value = b.tikfinityUrl;
+  text('#sign-key-state', b.hasSignKey ? '✓ kayıtlı' : '');
+  $('#sign-key-clear').hidden = !b.hasSignKey;
+  $('#sign-key').placeholder = b.hasSignKey ? '•••••••• (değiştirmek için yeni anahtar yaz)' : 'Euler Stream API anahtarı';
+  const dot = $('#diag-dot');
+  dot.className = `diag-dot${b.state === 'connected' ? ' live' : ['waiting', 'connecting', 'reconnecting'].includes(b.state) ? ' wait' : b.state === 'error' ? ' bad' : ''}`;
+  for (const k of Object.keys(bridgeLabels)) {
+    const el = $(`#diag-${k}`), n = b.counts?.[k] || 0;
+    if (el.textContent !== String(n)) { el.textContent = short(n); if ((lastCounts[k] || 0) < n) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
+    lastCounts[k] = n;
+  }
+  updateBridgeTimes();
 }
 function updateAudioPanel(s) {
   for (const [id, key] of volumeSliders) {
@@ -306,7 +342,18 @@ on('#portrait-default-btn', async () => { await api('portrait-default'); showToa
 $('#viewer-comment').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-btn').click(); });
 $('#viewer-name').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-btn').click(); });
 $('#tiktok-user').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connect-btn').click(); });
-on('#connect-btn', () => api('connect', { username: $('#tiktok-user').value.trim() }));
+on('#connect-btn', async () => {
+  const payload = { mode: bridgeMode || 'direct', username: $('#tiktok-user').value.trim().replace(/^@/, ''), tikfinityUrl: $('#tikfinity-url').value.trim() };
+  const key = $('#sign-key').value.trim(); if (key) payload.signApiKey = key;
+  const res = await api('connect', payload);
+  $('#sign-key').value = '';
+  if (res.state === 'waiting') showToast('⏳ Yayın bekleniyor, açılınca otomatik bağlanacak');
+  else if (res.state === 'connected') showToast('◉ Yayına bağlandı');
+});
+document.querySelectorAll('.mode-tabs button').forEach(btn => btn.addEventListener('click', () => { setBridgeMode(btn.dataset.mode); api('bridge-settings', { mode: btn.dataset.mode }).catch(() => {}); }));
+on('#sign-key-clear', async () => { await api('bridge-settings', { clearSignKey: true }); showToast('İmza anahtarı silindi'); });
+$('#sign-key').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connect-btn').click(); });
+$('#tikfinity-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connect-btn').click(); });
 on('#disconnect-btn', () => api('disconnect'));
 on('#demo-chat-btn', async () => { for (let i = 0; i < 10; i++) await api('chat', { name: `izleyici_${Math.floor(Math.random() * 90000 + 10000)}`, comment: i % 3 === 0 ? sampleComments[i % sampleComments.length] : '' }); });
 on('#demo-gift-btn', async () => {

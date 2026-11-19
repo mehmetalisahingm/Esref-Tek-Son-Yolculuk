@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { createBridge, DEFAULT_TIKFINITY_URL } from './bridge.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(DIR, 'public');
@@ -49,7 +50,7 @@ const seedUsers = ['alikaya','denizx','efemert','sevda','emir.07','buse','kubila
 const seedComments = ['Başın sağ olsun Eşref','Efsaneler ölmez 🖤','Rüya bitmesin...','Son yolculuğunda yanındayız','Mekânın cennet olsun','Unutulmayacaksın','🕯️🕯️🕯️','Kalbimizdesin abi'];
 
 const state = {
-  connected: false, connecting: false, connectionMessage: 'Demo modu', username: '', demo: true,
+  username: '', demo: true,
   carriers: Array(6).fill(null), portraitBearer: null, portraitCost: PORTRAIT_COST,
   portraitUrl: savedPortrait ? `/portrait-custom.${savedPortrait}` : DEFAULT_PORTRAIT_URL,
   people: [], events: [], gifts: 0, giftPoints: 0, totalChats: 0, likes: 0, follows: 0, shares: 0,
@@ -58,11 +59,6 @@ const state = {
 };
 const clients = new Set();
 let nextId = 0;
-let activeConnection = null;
-let isConnecting = false;
-let wantConnected = false;
-let reconnectTimer = null;
-let reconnectAttempt = 0;
 let giftStreak = new Map();
 let giftSeen = new Map();
 let emitTimer = null;
@@ -87,7 +83,8 @@ function leaderboard() {
 }
 function snapshot() {
   return {
-    connected: state.connected, connecting: state.connecting, connectionMessage: state.connectionMessage,
+    connected: isLive(), connecting: ['connecting', 'reconnecting', 'waiting'].includes(bridge.status.state), connectionMessage: bridge.status.state === 'idle' && state.demo ? 'Demo modu' : bridge.status.message,
+    bridge: bridgeSnapshot(),
     username: state.username, demo: state.demo, carriers: state.carriers,
     portraitBearer: state.portraitBearer, portraitCost: state.portraitCost, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
@@ -217,7 +214,7 @@ function clearState(demo) {
   state.people = []; state.carriers = Array(6).fill(null); state.portraitBearer = null; state.events = [];
   state.gifts = 0; state.giftPoints = 0; state.totalChats = 0; state.likes = 0; state.follows = 0; state.shares = 0;
   state.demo = demo; giftStreak = new Map(); giftSeen = new Map();
-  if (demo || !state.connected) state.viewerCount = null;
+  if (demo || !isLive()) state.viewerCount = null;
 }
 function demoSeed() {
   clearState(true);
@@ -251,111 +248,76 @@ function originAllowed(req) {
   if (!req.headers.origin) return true;
   try { const uri = new URL(req.headers.origin); return uri.host === req.headers.host; } catch { return false; }
 }
-// tiktok-live-connector v2 (proto v3): user.displayId is the @handle, user.nickname the profile name.
-function getUser(e) {
-  const u = e?.user || {};
-  const name = u.displayId || u.uniqueId || u.nickname || 'izleyici';
-  return { name, id: String(u.id || u.userId || u.displayId || u.uniqueId || '') };
+// ——— Live bridge settings (kept in a local, git-ignored file; the sign key never leaves this computer) ———
+const CONFIG_FILE = process.env.SON_YOLCULUK_CONFIG || path.join(DIR, 'config.local.json');
+let bridgeConfig = { mode: 'direct', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL };
+try { bridgeConfig = { ...bridgeConfig, ...JSON.parse(await fs.readFile(CONFIG_FILE, 'utf8')) }; } catch {}
+async function saveBridgeConfig() {
+  try { await fs.writeFile(CONFIG_FILE, JSON.stringify(bridgeConfig, null, 2)); } catch (err) { console.warn('Ayar dosyası yazılamadı:', err?.message || err); }
 }
-function countGiftEvent(payload) {
-  const who = getUser(payload);
-  const gId = String(payload.giftId || payload.gift?.id || 'gift');
-  const identity = who.id + ':' + gId;
-  const msgId = String(payload.common?.msgId || payload.msgId || payload.transactionId || '');
-  const repeat = Math.max(1, Number(payload.repeatCount || payload.gift?.repeatCount || 1));
-  const streak = Number(payload.gift?.type ?? payload.giftType ?? 0) === 1;
-  let delta = 1;
-  if (streak) {
+function bridgeSnapshot() {
+  const b = bridge.status;
+  return {
+    mode: b.mode, state: b.state, message: b.message, counts: b.counts, lastEventAt: b.lastEventAt, lastEventType: b.lastEventType, since: b.since,
+    username: bridgeConfig.username, tikfinityUrl: bridgeConfig.tikfinityUrl, hasSignKey: Boolean(bridgeConfig.signApiKey), savedMode: bridgeConfig.mode,
+  };
+}
+
+// ——— One event pipeline for both transports ———
+function countGift(ev) {
+  const { user, gift: g } = ev;
+  const identity = `${user.id}:${g.id}`;
+  let delta;
+  if (g.streakable) {
+    // Combo gifts report a running total; count only the increase since the last update.
     const last = giftStreak.get(identity) || 0;
-    delta = Math.max(0, repeat - last);
-    if (payload.repeatEnd) giftStreak.delete(identity); else giftStreak.set(identity, repeat);
+    delta = Math.max(0, g.repeatCount - last);
+    if (g.repeatEnd) giftStreak.delete(identity); else giftStreak.set(identity, g.repeatCount);
   } else {
-    delta = repeat;
-    if (msgId) {
-      const key = identity + ':' + msgId;
+    delta = Math.max(1, g.repeatCount || 1);
+    if (g.msgId) {
+      const key = `${identity}:${g.msgId}`;
       if (giftSeen.has(key)) return;
       giftSeen.set(key, Date.now());
       if (giftSeen.size > 1000) giftSeen = new Map([...giftSeen].slice(-500));
     }
   }
-  if (delta > 0) {
-    const rawPoints = payload.gift?.diamondCount ?? payload.extendedGiftInfo?.diamond_count ?? payload.extendedGiftInfo?.diamondCount ?? payload.diamondCount;
-    // Never invent point value when TikTok does not send it.
-    const unitPoints = rawPoints != null && Number.isFinite(Number(rawPoints)) ? Number(rawPoints) : 0;
-    gift(who.name, who.id, String(payload.gift?.name || payload.extendedGiftInfo?.name || 'TikTok hediyesi').slice(0, 32), delta, false, unitPoints);
+  if (delta <= 0) return;
+  // Never invent a point value when TikTok does not send one.
+  const unitPoints = g.diamonds != null && Number.isFinite(Number(g.diamonds)) ? Number(g.diamonds) : 0;
+  gift(user.name, user.id, g.name.slice(0, 32), delta, false, unitPoints);
+}
+function ingest(ev) {
+  const u = ev.user;
+  switch (ev.type) {
+    case 'chat': chat(u.name, u.id, false, ev.comment); break;
+    // Join notifications are not guaranteed for every passive viewer; TikTok decides what it sends.
+    case 'member': if (u.id) join(u.name, u.id, 'member'); break;
+    case 'follow': if (u.id) join(u.name, u.id, 'follow'); break;
+    case 'share': if (u.id) join(u.name, u.id, 'share'); break;
+    case 'like': if (u.id) like(u.name, u.id, ev.count); break;
+    case 'viewers': if (Number.isFinite(ev.viewers) && ev.viewers >= 0) { state.viewerCount = ev.viewers; emit(); } break;
+    case 'gift': countGift(ev); break;
+    case 'end': event('info', 'YAYIN', 'Canlı yayın sona erdi'); emit(); break;
   }
 }
-function scheduleReconnect() {
-  if (!wantConnected || reconnectTimer) return;
-  const delay = Math.min(30000, 4000 * 2 ** Math.min(3, reconnectAttempt++));
-  state.connectionMessage = `Bağlantı koptu · ${Math.round(delay / 1000)} sn içinde yeniden deneniyor`; emit();
-  reconnectTimer = setTimeout(async () => {
-    reconnectTimer = null;
-    if (!wantConnected) return;
-    try { await openConnection(state.username, { keepState: true }); }
-    catch { scheduleReconnect(); }
-  }, delay);
-}
-async function closeConnection() {
-  const c = activeConnection; activeConnection = null;
-  if (c) { try { c.removeAllListeners?.(); await c.disconnect(); } catch {} }
-}
-async function disconnect() {
-  wantConnected = false; reconnectAttempt = 0;
-  clearTimeout(reconnectTimer); reconnectTimer = null;
-  await closeConnection();
-  state.connected = false; state.connecting = false;
-  state.connectionMessage = 'Bağlantı kapalı'; emit();
-}
-async function openConnection(clean, { keepState }) {
-  if (isConnecting) throw new Error('Bağlantı zaten kuruluyor');
-  isConnecting = true;
-  try {
-    await closeConnection();
-    if (!keepState) clearState(false);
-    state.connecting = true; state.username = clean;
-    state.connectionMessage = 'TikTok yayınına bağlanılıyor'; emit();
-    const module = await import('tiktok-live-connector').catch(() => null);
-    if (!module) throw new Error('TikTok paketi eksik: klasörde "npm install" çalıştır');
-    const { TikTokLiveConnection, WebcastEvent, ControlEvent } = module;
-    const connection = new TikTokLiveConnection(clean, { processInitialData: false, enableExtendedGiftInfo: false });
-    activeConnection = connection;
-    const live = fn => (...args) => { if (activeConnection === connection) { try { fn(...args); } catch (err) { console.warn('Olay işlenemedi:', err?.message || err); } } };
-    connection.on(WebcastEvent.CHAT, live(e => { const p = getUser(e); chat(p.name, p.id, false, e.comment); }));
-    // Joining users can appear in the follower crowd even without commenting.
-    // TikTok does not guarantee member notifications for every passive viewer.
-    connection.on(WebcastEvent.MEMBER, live(e => { const p = getUser(e); if (p.id) join(p.name, p.id, 'member'); }));
-    connection.on(WebcastEvent.FOLLOW, live(e => { const p = getUser(e); if (p.id) join(p.name, p.id, 'follow'); }));
-    connection.on(WebcastEvent.SHARE, live(e => { const p = getUser(e); if (p.id) join(p.name, p.id, 'share'); }));
-    connection.on(WebcastEvent.LIKE, live(e => { const p = getUser(e); if (p.id) like(p.name, p.id, e.count || e.likeCount || 1); }));
-    connection.on(WebcastEvent.ROOM_USER, live(e => { const n = Number(e.viewerCount ?? e.total ?? e.totalUser); if (Number.isFinite(n) && n >= 0) { state.viewerCount = n; emit(); } }));
-    connection.on(WebcastEvent.GIFT, live(countGiftEvent));
-    connection.on(WebcastEvent.STREAM_END, live(() => {
-      wantConnected = false; state.connected = false; state.connectionMessage = 'Yayın sona erdi'; event('info', 'YAYIN', 'Canlı yayın sona erdi'); emit();
-    }));
-    connection.on(ControlEvent.ERROR, live(({ info, exception } = {}) => {
-      state.connectionMessage = String(info || exception?.message || 'TikTok bağlantı hatası').slice(0, 120); emit();
-    }));
-    connection.on(ControlEvent.DISCONNECTED, live(() => {
-      state.connected = false; activeConnection = null;
-      if (wantConnected) scheduleReconnect(); else { state.connectionMessage = 'Yayın bağlantısı kesildi'; emit(); }
-    }));
-    const room = await connection.connect();
-    reconnectAttempt = 0;
-    state.connected = true; state.connecting = false;
-    state.connectionMessage = `Bağlandı · Oda ${room?.roomId || ''}`.trim(); emit();
-  } catch (e) {
-    state.connected = false; state.connecting = false;
-    state.connectionMessage = String(e?.message || e).slice(0, 160); emit();
-    throw e;
-  } finally { isConnecting = false; }
-}
-async function connect(username) {
-  const clean = normalize(username);
-  if (!clean) throw Object.assign(new Error('TikTok kullanıcı adını yaz'), { status: 400 });
-  wantConnected = false; clearTimeout(reconnectTimer); reconnectTimer = null; reconnectAttempt = 0;
-  await openConnection(clean, { keepState: false });
-  wantConnected = true;
+const bridge = createBridge({ onEvent: ingest, onStatus: () => emit() });
+const isLive = () => bridge.status.state === 'connected';
+async function connect(body) {
+  const mode = body.mode === 'tikfinity' ? 'tikfinity' : 'direct';
+  const username = normalize(body.username ?? bridgeConfig.username);
+  if (mode === 'direct' && !username) throw Object.assign(new Error('TikTok kullanıcı adını yaz'), { status: 400 });
+  if (typeof body.signApiKey === 'string' && body.signApiKey.trim()) bridgeConfig.signApiKey = body.signApiKey.trim().slice(0, 200);
+  if (body.clearSignKey) bridgeConfig.signApiKey = '';
+  let tikfinityUrl = String(body.tikfinityUrl || bridgeConfig.tikfinityUrl || DEFAULT_TIKFINITY_URL).trim();
+  if (!/^wss?:\/\/[^\s]+$/i.test(tikfinityUrl)) throw Object.assign(new Error('TikFinity adresi ws:// ile başlamalı'), { status: 400 });
+  Object.assign(bridgeConfig, { mode, username, tikfinityUrl });
+  await saveBridgeConfig();
+  // A fresh connection replaces the demo procession with real viewers.
+  clearState(false); state.username = username; emit();
+  const st = await bridge.start({ mode, username, signApiKey: bridgeConfig.signApiKey, tikfinityUrl });
+  if (st.state === 'error') throw Object.assign(new Error(st.message), { status: 400 });
+  return { ok: true, state: st.state, message: st.message };
 }
 
 const mime = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg', '.wav': 'audio/wav' };
@@ -470,12 +432,19 @@ const server = http.createServer(async (req, res) => {
           return respond(res, 200, { ok: true, portraitUrl: state.portraitUrl });
         }
         case '/api/demo': {
-          if (state.connected || wantConnected) return respond(res, 409, { error: 'Canlı yayın bağlıyken demo yüklenmez. Önce bağlantıyı kes.' });
+          if (bridge.wanted) return respond(res, 409, { error: 'Canlı yayın bağlıyken demo yüklenmez. Önce bağlantıyı kes.' });
           demoSeed(); return respond(res, 200, { ok: true });
         }
         case '/api/reset': { clearState(false); emit(); return respond(res, 200, { ok: true }); }
-        case '/api/connect': { await connect(body.username); return respond(res, 200, { ok: true }); }
-        case '/api/disconnect': { await disconnect(); return respond(res, 200, { ok: true }); }
+        case '/api/connect': return respond(res, 200, await connect(body));
+        case '/api/disconnect': { bridge.stop(); emit(); return respond(res, 200, { ok: true }); }
+        case '/api/bridge-settings': {
+          if (typeof body.signApiKey === 'string' && body.signApiKey.trim()) bridgeConfig.signApiKey = body.signApiKey.trim().slice(0, 200);
+          if (body.clearSignKey) bridgeConfig.signApiKey = '';
+          if (body.mode === 'direct' || body.mode === 'tikfinity') bridgeConfig.mode = body.mode;
+          await saveBridgeConfig(); emit();
+          return respond(res, 200, { ok: true, bridge: bridgeSnapshot() });
+        }
         default: return respond(res, 404, { error: 'API bulunamadı' });
       }
     }
