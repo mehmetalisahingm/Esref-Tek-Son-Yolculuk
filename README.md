@@ -94,7 +94,7 @@ Bu bağlantılar **resmî TikTok API'si değildir**; TikTok tarafındaki değiş
 - Eşit beğenide mevcut taşıyıcı önceliklidir; hediye eşitliğinde önce katılan izleyici önceliklidir.
 - Diğer katılımcılar arkadaki kalabalıkta yürür; çizimde performans için ilk 80 kişi gösterilir.
 - Aynı kullanıcı tekrar yorum yazdığında ikinci avatar oluşmaz. Kullanıcılar kimliğe göre eşleştirilir.
-- Demo başlangıcında sahnede örnek kullanıcılar bulunur. Gerçek yayına bağlanırken demo kullanıcıları temizlenir.
+- Oyun **boş başlar**; kortejde yalnızca gerçek izleyiciler yürür. Örnek kullanıcıları görmek için paneldeki **Demo sahnesi** düğmesine bas (ya da sunucuyu `SON_YOLCULUK_DEMO=1` ile başlat). Yayına bağlanınca demo kullanıcıları temizlenir.
 
 ## Güvenlik ve teknik notlar
 
@@ -129,7 +129,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 29 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 30 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 

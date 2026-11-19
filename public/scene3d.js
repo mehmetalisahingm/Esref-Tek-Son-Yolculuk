@@ -380,7 +380,7 @@ export function createScene(canvas, labelsRoot, T) {
       rig.target = a;
       rig.group.visible = true;
       const p = a.person;
-      rig.handle.textContent = a.empty ? (a.role === 'portrait' ? '👑 En çok hediye atan taşır' : '') : a.role === 'portrait' ? `👑 @${p.name}` : a.role === 'carrier' ? `@${p.name} ❤️${(p.likes || 0).toLocaleString('tr-TR')}` : `@${p.name}`;
+      rig.handle.textContent = a.empty ? (a.role === 'portrait' ? '👑 Hediye at, sen taşı' : '') : a.role === 'portrait' ? `👑 @${p.name}` : a.role === 'carrier' ? `@${p.name} ❤️${(p.likes || 0).toLocaleString('tr-TR')}` : `@${p.name}`;
       const fresh = p?.comment && Date.now() - p.commentAt < 7000;
       if (fresh && rig.bubble.textContent !== p.comment) { rig.bubble.textContent = p.comment; rig.bubbleUntil = p.commentAt + 7000; }
       rig.label.className = `world-name ${a.role}${a.empty ? ' empty' : ''}`;
