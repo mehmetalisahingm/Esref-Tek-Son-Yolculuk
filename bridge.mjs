@@ -12,10 +12,16 @@ const WAIT_FOR_LIVE_MS = 15000;
 //   gift: { id, name, diamonds, repeatCount, repeatEnd, streakable, msgId } }
 
 const str = v => (v === undefined || v === null ? '' : String(v));
+// Only plain https image URLs are passed on as profile pictures.
+export function safeAvatar(v) {
+  const url = str(Array.isArray(v) ? v[0] : v).trim();
+  return /^https:\/\/[^\s"'<>]{8,600}$/i.test(url) ? url : '';
+}
 function userFrom(u = {}, msg = {}) {
   const name = str(u.displayId || u.uniqueId || u.nickname || msg.nickname || msg.uniqueId) || 'izleyici';
+  const avatar = safeAvatar(u.avatarThumb?.urlList || u.avatarMedium?.urlList || u.profilePictureUrl || msg.profilePictureUrl);
   // Join messages sometimes carry the id on the message itself rather than on the user object.
-  return { id: str(u.id || u.userId || msg.userId || u.displayId || u.uniqueId), name };
+  return { id: str(u.id || u.userId || msg.userId || u.displayId || u.uniqueId), name, ...(avatar ? { avatar } : {}) };
 }
 
 // tiktok-live-connector v2 (proto v3) events → normalised events.
@@ -55,7 +61,8 @@ export function fromTikfinity(raw) {
   if (!msg || typeof msg !== 'object') return null;
   const kind = str(msg.event || msg.type).toLowerCase();
   const d = msg.data && typeof msg.data === 'object' ? msg.data : msg;
-  const user = { id: str(d.userId || d.uniqueId), name: str(d.uniqueId || d.nickname) || 'izleyici' };
+  const avatar = safeAvatar(d.profilePictureUrl || d.userDetails?.profilePictureUrls);
+  const user = { id: str(d.userId || d.uniqueId), name: str(d.uniqueId || d.nickname) || 'izleyici', ...(avatar ? { avatar } : {}) };
   switch (kind) {
     case 'chat': case 'comment': return { type: 'chat', user, comment: str(d.comment ?? d.message) };
     case 'member': case 'join': case 'enter': case 'memberjoin': case 'viewerjoin': case 'roomenter': return { type: 'member', user };

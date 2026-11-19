@@ -12,7 +12,7 @@ export function createFallback(canvas,labelsRoot){
   function point(x,y,z){
     const depth=Math.max(-40,Math.min(10,z));
     const scale=1/(1+Math.max(-depth,0)*.067);
-    const cx=(.5+(view===2?.13:view===1?0:.065))*w;
+    const cx=(.38+(view===2?.13:view===1?0:.065))*w;
     return {x:cx+x*scale*w*.112,y:h*.645+z*scale*h*.043-y*scale*h*.083,scale};
   }
   function poly(arr,fill,stroke=null,lw=1){ctx.beginPath();ctx.moveTo(arr[0].x,arr[0].y);for(const p of arr.slice(1))ctx.lineTo(p.x,p.y);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}

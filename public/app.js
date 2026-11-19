@@ -56,17 +56,20 @@ function nextAlert() {
   const a = alertQueue.shift();
   if (!a) { alertBusy = false; return; }
   alertBusy = true;
-  if (a.kind === 'portrait' || a.kind === 'memorial') return takeover(a);
+  return takeover(a);
+}
+// Stacked event toasts in the top-left corner (newest on top, up to four at once).
+function toast(kind, icon, name, message, big = false) {
+  const root = $('#alerts');
   const el = document.createElement('div');
-  el.className = `alert ${a.kind}${a.big ? ' big' : ''}`;
-  const icon = document.createElement('span'); icon.className = 'alert-icon'; icon.textContent = a.icon;
-  const body = document.createElement('div');
-  const title = document.createElement('strong'); title.textContent = a.title;
-  const sub = document.createElement('small'); sub.textContent = a.sub;
-  body.append(title, sub); el.append(icon, body);
-  $('#alerts').append(el);
-  const dwell = alertQueue.length > 3 ? 1500 : a.big ? 3600 : 2600;
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); nextAlert(); }, dwell);
+  el.className = `feed-toast ${kind}${big ? ' big' : ''}`;
+  const i = document.createElement('i'); i.textContent = icon;
+  const b = document.createElement('b'); b.textContent = name ? at(name) : '';
+  const t = document.createElement('span'); t.textContent = message;
+  el.append(i, b, t);
+  root.prepend(el);
+  while (root.childElementCount > 4) root.lastElementChild.remove();
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, big ? 6000 : 4500);
 }
 function takeover(a) {
   const root = $('#takeover');
@@ -84,39 +87,27 @@ function floatUp(symbol) {
   el.style.left = `${8 + Math.random() * 46}px`; el.style.animationDuration = `${2.6 + Math.random() * 1.4}s`; el.style.fontSize = `${18 + Math.random() * 12}px`;
   lane.append(el); el.addEventListener('animationend', () => el.remove());
 }
-function joinFeed(textLine) {
-  const feed = $('#join-feed');
-  const el = document.createElement('div'); el.className = 'join-line'; el.textContent = textLine;
-  feed.prepend(el); while (feed.childElementCount > 3) feed.lastElementChild.remove();
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 500); }, 3800);
-}
 function handleEvent(e) {
   stage?.fx?.(e);
   switch (e.type) {
     case 'gift': {
       const big = (e.points || 0) >= 100 || (e.amount || 1) >= 10;
-      const where = 'fotoğraf için yarışıyor';
-      queueAlert({ kind: 'gift', big, icon: '🎁', title: `${at(e.name)} ${e.giftName || 'hediye'}${e.amount > 1 ? ` ×${e.amount}` : ''}`, sub: `${where}${e.points ? ` · +${fmt(e.points)} puan` : ''}` });
-      audio.play(e.newCarrier ? 'carrier' : 'gift', { big });
+      toast('gift', '🎁', e.name, `${e.giftName || 'hediye'}${e.amount > 1 ? ` ×${e.amount}` : ''} gönderdi!`, big);
+      audio.play('gift', { big });
       break;
     }
     case 'portrait':
       queueAlert({ kind: 'portrait', title: at(e.name), sub: e.previous ? `${at(e.previous)} tahtı kaptırdı · ${fmt(e.count)} hediye` : `${fmt(e.count)} hediye ile Eşref Tek'in fotoğrafını taşıyor` });
+      toast('gift', '👑', e.name, 'fotoğrafı aldı!', true);
       audio.play('portrait');
       break;
-    case 'follow':
-      queueAlert({ kind: 'follow', icon: '🕯️', title: `${at(e.name)} takip etti`, sub: 'Kortejde bir mum yaktı' });
-      audio.play('follow');
-      break;
-    case 'milestone':
-      queueAlert({ kind: 'milestone', big: true, icon: '💗', title: e.detail, sub: 'Beğenmeye devam, tabutu omuzla' });
-      audio.play('milestone');
-      break;
-    case 'like': floatUp(Math.random() > .5 ? '🕯️' : '🤍'); audio.play('like'); break;
-    case 'join': joinFeed(`↗ ${at(e.name)} korteje katıldı`); audio.play('join'); break;
-    case 'carrier': joinFeed(`❤️ ${at(e.name)} tabutu omuzladı · ${fmt(e.likes)} beğeni`); audio.play('carrier'); break;
+    case 'follow': toast('follow', '🕯️', e.name, 'takip etti, mum yaktı!'); audio.play('follow'); break;
+    case 'milestone': toast('milestone', '✨', '', `${e.detail}!`, true); audio.play('milestone'); break;
+    case 'like': floatUp(Math.random() > .5 ? '❤️' : '🤍'); audio.play('like'); break;
+    case 'join': toast('join', '↗', e.name, 'korteje katıldı'); audio.play('join'); break;
+    case 'carrier': toast('carrier', '❤️', e.name, 'tabutu omuzladı!'); audio.play('carrier'); break;
     case 'chat': audio.play('chat'); break;
-    case 'share': joinFeed(`↻ ${at(e.name)} yayını paylaştı`); audio.play('follow'); break;
+    case 'share': toast('join', '↻', e.name, 'yayını paylaştı'); audio.play('follow'); break;
   }
 }
 function processEvents(s) {
@@ -162,6 +153,28 @@ function updateLeaderboard(s) {
     const v = document.createElement('em'); v.textContent = short(p.giftCount);
     e.append(m, n, v); root.append(e);
   });
+}
+function updateLikeBoard(s) {
+  const root = $('#like-board');
+  const rows = s.likeBoard || [];
+  root.replaceChildren();
+  if (!rows.length) { const li = document.createElement('li'); li.className = 'ledger-empty'; li.textContent = 'İlk beğenen tabutu omuzlar'; root.append(li); return; }
+  rows.forEach((p, i) => {
+    const li = document.createElement('li'); li.className = `ledger-row${p.carrying ? ' carrying' : ''}`;
+    const rank = document.createElement('em'); rank.textContent = String(i + 1);
+    const av = document.createElement('span'); av.className = 'ledger-avatar'; av.textContent = (p.name || '?').replace(/^@/, '').slice(0, 1).toLocaleUpperCase('tr-TR');
+    if (p.avatar) { const img = document.createElement('img'); img.referrerPolicy = 'no-referrer'; img.alt = ''; img.loading = 'lazy'; img.onerror = () => img.remove(); img.src = p.avatar; av.append(img); }
+    const name = document.createElement('b'); name.textContent = p.name;
+    const likes = document.createElement('span'); likes.className = 'ledger-score'; likes.textContent = `❤️${short(p.likes)}`;
+    li.append(rank, av, name, likes);
+    if (p.followed) { const c = document.createElement('i'); c.textContent = '🕯️'; li.append(c); }
+    root.append(li);
+  });
+}
+function updateGoal(s) {
+  const likes = s.likes || 0, step = 1000, next = (Math.floor(likes / step) + 1) * step;
+  text('#goal-count', `${fmt(likes)}/${fmt(next)}`);
+  $('#goal-bar').style.width = `${Math.max(2, ((likes % step) / step) * 100).toFixed(1)}%`;
 }
 function updateThrone(s) {
   const holder = s.portraitBearer, lb = s.leaderboard || [];
@@ -273,7 +286,7 @@ function showState(next) {
   text('#stats-gifts', fmt(next.gifts));
   text('#stats-points', `${fmt(next.giftPoints)} puan`);
   text('#stats-likes', fmt(next.likes || 0));
-  updateCarriers(next); updateLeaderboard(next); updateThrone(next); updateStatus(next); updateAudioPanel(next);
+  updateCarriers(next); updateLeaderboard(next); updateLikeBoard(next); updateGoal(next); updateThrone(next); updateStatus(next); updateAudioPanel(next);
   if (!overlay) updateActivity(next);
   stage?.update(next);
   processEvents(next);

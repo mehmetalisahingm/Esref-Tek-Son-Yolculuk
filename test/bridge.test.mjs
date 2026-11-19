@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { fromTikfinity, fromConnector, explainError } from '../bridge.mjs';
+import { fromTikfinity, fromConnector, explainError, safeAvatar } from '../bridge.mjs';
 
 // ——— Unit: event normalisation and error messages ———
 test('TikFinity messages are normalised into game events', () => {
@@ -34,6 +34,13 @@ test('joins are kept even when TikTok sends the id on the message or only a nick
   assert.equal(fromConnector('anonMember', { nickName: '***' }), null);
   assert.equal(fromTikfinity({ event: 'enter', data: { uniqueId: 'a' } }).type, 'member');
   assert.deepEqual(fromTikfinity({ event: 'yeniTur', data: {} }), { type: 'unknown', kind: 'yenitur' });
+});
+
+test('profile pictures are taken from both transports, only as https URLs', () => {
+  assert.equal(fromConnector('chat', { user: { id: '1', displayId: 'a', avatarThumb: { urlList: ['https://p16.tiktokcdn.com/a.jpg'] } } }).user.avatar, 'https://p16.tiktokcdn.com/a.jpg');
+  assert.equal(fromTikfinity({ event: 'like', data: { uniqueId: 'b', userId: '2', likeCount: 1, profilePictureUrl: 'https://p77.tiktokcdn.com/b.webp' } }).user.avatar, 'https://p77.tiktokcdn.com/b.webp');
+  assert.equal(safeAvatar('javascript:alert(1)'), '');
+  assert.equal(safeAvatar('http://insecure.example/a.jpg'), '');
 });
 
 test('connection errors become clear Turkish messages with the right retry policy', () => {

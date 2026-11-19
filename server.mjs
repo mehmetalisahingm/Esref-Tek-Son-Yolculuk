@@ -79,6 +79,11 @@ function leaderboard() {
     .sort((a, b) => b.giftCount - a.giftCount || a.joined - b.joined)
     .slice(0, 5).map(p => ({ id: p.id, name: p.name, giftPoints: p.giftPoints, giftCount: p.giftCount }));
 }
+// "Tabut defteri": the six biggest likers, i.e. the people carrying the coffin, in ranking order.
+function likeBoard() {
+  return state.people.filter(p => p.likes > 0).sort((a, b) => b.likes - a.likes || a.joined - b.joined).slice(0, 6)
+    .map(p => ({ id: p.id, name: p.name, likes: p.likes, giftCount: p.giftCount, followed: Boolean(p.followed), avatar: p.avatar || '', carrying: state.carriers.some(c => c?.id === p.id), portrait: state.portraitBearer?.id === p.id }));
+}
 function snapshot() {
   return {
     connected: isLive(), connecting: ['connecting', 'reconnecting', 'waiting'].includes(bridge.status.state), connectionMessage: bridge.status.state === 'idle' && state.demo ? 'Demo modu' : bridge.status.message,
@@ -87,7 +92,7 @@ function snapshot() {
     portraitBearer: state.portraitBearer, portraitUrl: state.portraitUrl, giftPoints: state.giftPoints,
     people: state.people, events: state.events, gifts: state.gifts, totalChats: state.totalChats,
     likes: state.likes, follows: state.follows, shares: state.shares, viewerCount: state.viewerCount,
-    leaderboard: leaderboard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
+    leaderboard: leaderboard(), likeBoard: likeBoard(), audio: state.audio, musicUrl: state.musicUrl, musicName: state.musicName, musicPlaylist: state.musicPlaylist, revision: state.revision,
   };
 }
 // Coalesce bursts (likes on a busy stream can arrive dozens per second) into ≤ 12 pushes per second.
@@ -281,6 +286,15 @@ function countGift(ev) {
 const known = u => Boolean(u && (u.id || (u.name && u.name !== 'izleyici')));
 function ingest(ev) {
   const u = ev.user;
+  ingestEvent(ev, u);
+  // Keep the viewer's TikTok profile picture for the board.
+  if (u?.avatar) {
+    const id = String(u.id || normalize(u.name).toLocaleLowerCase('tr-TR')).slice(0, 90);
+    const p = state.people.find(x => x.id === id);
+    if (p && p.avatar !== u.avatar) { p.avatar = u.avatar; emit(); }
+  }
+}
+function ingestEvent(ev, u) {
   switch (ev.type) {
     case 'chat': chat(u.name, u.id, false, ev.comment); break;
     // Join notifications are not guaranteed for every passive viewer; TikTok decides what it sends.
