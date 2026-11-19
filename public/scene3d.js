@@ -315,7 +315,7 @@ export function createScene(canvas, labelsRoot, T) {
   let petalCursor = 0;
   function spawnPetal(x, y, z, burst) {
     const pt = petals[petalCursor = (petalCursor + 1) % PETALS];
-    pt.p.set(x, y, z); pt.v.set((Math.random() - .5) * (burst ? 2.2 : .4), burst ? Math.random() * 1.6 : -.3, (Math.random() - .5) * (burst ? 2.2 : .4) + SPEED * .5);
+    pt.p.set(x, y, z); pt.v.set((Math.random() - .5) * (burst ? 2.2 : .4), burst ? Math.random() * 1.6 : -.3, (Math.random() - .5) * (burst ? 2.2 : .4) - SPEED * .5);
     pt.life = 9;
   }
   const SPARKS = 700, sparkPos = new Float32Array(SPARKS * 3), sparkCol = new Float32Array(SPARKS * 3), sparks = [];
@@ -502,13 +502,13 @@ export function createScene(canvas, labelsRoot, T) {
     elapsed += dt; frameNo++;
     const step = elapsed * 3.4; // slow funeral march cadence
     // Road and scenery scroll
-    roadTex.offset.y += dt * SPEED * roadTex.repeat.y / 150;
-    grassTex.offset.y += dt * SPEED * grassTex.repeat.y / 300;
-    for (const o of roadside) { o.position.z += dt * SPEED; if (o.position.z > 16) o.position.z -= 83.2; }
-    for (const m of mists) { m.position.z += dt * SPEED * .6; m.position.x += Math.sin(elapsed * .1 + m.userData.drift) * dt * .2; m.lookAt(camera.position.x, m.position.y, camera.position.z); if (m.position.z > 14) m.position.z -= 52; }
+    roadTex.offset.y -= dt * SPEED * roadTex.repeat.y / 150;
+    grassTex.offset.y -= dt * SPEED * grassTex.repeat.y / 300;
+    for (const o of roadside) { o.position.z -= dt * SPEED; if (o.position.z < -67.2) o.position.z += 83.2; }
+    for (const m of mists) { m.position.z -= dt * SPEED * .6; m.position.x += Math.sin(elapsed * .1 + m.userData.drift) * dt * .2; m.lookAt(camera.position.x, m.position.y, camera.position.z); if (m.position.z < -38) m.position.z += 52; }
     for (let i = 0; i < flyCount; i++) {
       flyPos[i * 3 + 1] += Math.sin(elapsed * .8 + flyPhase[i]) * dt * .25;
-      flyPos[i * 3 + 2] += dt * SPEED * .7; if (flyPos[i * 3 + 2] > 14) flyPos[i * 3 + 2] = -30;
+      flyPos[i * 3 + 2] -= dt * SPEED * .7; if (flyPos[i * 3 + 2] < -30) flyPos[i * 3 + 2] = 14;
     }
     flyGeo.attributes.position.needsUpdate = true;
     lampLights.forEach((l, i) => { l.intensity = 8.5 + Math.sin(elapsed * 9 + i * 3) * .4 + Math.sin(elapsed * 23 + i) * .3; });
@@ -549,8 +549,8 @@ export function createScene(canvas, labelsRoot, T) {
       if (pt.life > 0) {
         pt.life -= dt;
         pt.v.y = Math.max(-.55, pt.v.y - dt * 1.4); pt.v.x *= .985; pt.v.z *= .985;
-        pt.p.addScaledVector(pt.v, dt); pt.p.x += Math.sin(elapsed * 2 + i) * dt * .25; pt.p.z += dt * SPEED * .4;
-        if (pt.p.y < .03) { pt.p.y = .03; pt.v.set(0, 0, 0); pt.p.z += dt * SPEED; }
+        pt.p.addScaledVector(pt.v, dt); pt.p.x += Math.sin(elapsed * 2 + i) * dt * .25; pt.p.z -= dt * SPEED * .4;
+        if (pt.p.y < .03) { pt.p.y = .03; pt.v.set(0, 0, 0); pt.p.z -= dt * SPEED; }
         pt.r.set(elapsed * pt.s.x, elapsed * pt.s.y, elapsed * pt.s.z);
         if (pt.p.y <= .031) pt.r.set(-Math.PI / 2, 0, i);
       }
