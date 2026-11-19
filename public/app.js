@@ -8,7 +8,7 @@ const forceFallback = qs.has('fallback');
 if (overlay) document.body.classList.add('overlay');
 if (qs.has('compact')) document.body.classList.add('compact');
 
-const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', revision: 0 };
+const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', musicPlaylist: [], revision: 0 };
 let state = initial;
 let stage = null;
 let firstState = true;
@@ -34,7 +34,7 @@ const volumeSliders = [['#volume', 'volume'], ['#music-volume', 'musicVolume'], 
 const audio = createAudio();
 let previewOn = false;
 function audioEnabled() { return overlay || previewOn; }
-function configureAudio() { audio.configure({ enabled: audioEnabled(), ...state.audio, musicUrl: state.musicUrl || '' }); refreshGate(); }
+function configureAudio() { audio.configure({ enabled: audioEnabled(), ...state.audio, musicUrl: state.musicUrl || '', musicPlaylist: state.musicPlaylist || [] }); refreshGate(); }
 function refreshGate() { const gate = $('#sound-gate'); gate.hidden = !(audioEnabled() && !audio.running); }
 audio.onstate(refreshGate);
 const unlock = () => audio.unlock().then(refreshGate);
@@ -217,8 +217,15 @@ function updateAudioPanel(s) {
     text(`${id}-value`, `${v}%`);
   }
   $('#music-toggle').checked = s.audio.music; $('#sfx-toggle').checked = s.audio.sfx;
-  text('#music-name', s.musicUrl ? `♫ ${s.musicName || 'Yüklenen şarkı'}` : '♫ Chopin — Cenaze Marşı (varsayılan)');
-  $('#music-default-btn').disabled = !s.musicUrl;
+  const slots = Array.isArray(s.musicPlaylist) ? s.musicPlaylist : [{ url: s.musicUrl, name: s.musicName }];
+  const active = slots.filter(track => track?.url);
+  text('#music-name', active.length ? `♫ ${active.length} şarkı sırayla döngüde çalacak (1 → 2 → 3 → 1)` : '♫ Chopin — Cenaze Marşı (varsayılan)');
+  $('#music-default-btn').disabled = !active.length;
+  for (let i = 1; i <= 3; i++) {
+    const item = slots[i - 1];
+    text(`#music-slot-${i}-name`, item?.url ? `✓ ${item.name || i + '. Şarkı'}` : 'Dosya yüklenmedi');
+    $(`#music-slot-${i}-clear`).disabled = !item?.url;
+  }
 }
 function showState(next) {
   state = next;
@@ -315,13 +322,25 @@ for (const [id, key] of volumeSliders) {
   let timer = null;
   $(id).addEventListener('input', () => { text(`${id}-value`, `${$(id).value}%`); clearTimeout(timer); timer = setTimeout(wrap(() => api('audio', { [key]: Number($(id).value) / 100 })), 120); });
 }
-$('#music-upload').addEventListener('change', wrap(async () => {
-  const file = $('#music-upload').files?.[0]; if (!file) return;
-  if (file.size > 15 * 1024 * 1024) throw new Error('Şarkı 15 MB altında olmalı');
-  showToast('♫ Şarkı yükleniyor…');
-  const dataUrl = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
-  await api('music', { dataUrl, name: file.name }); $('#music-upload').value = ''; showToast('♫ Şarkı yayına eklendi');
-}));
+// Each slot is independent; the audio player only advances when a track ends.
+for (let slot = 1; slot <= 3; slot++) {
+  const input = $(slot === 1 ? '#music-upload' : `#music-upload-${slot}`);
+  input.addEventListener('change', wrap(async () => {
+    const file = input.files?.[0]; if (!file) return;
+    if (file.size > 15 * 1024 * 1024) throw new Error('Şarkı 15 MB altında olmalı');
+    showToast(`♫ ${slot}. şarkı yükleniyor…`);
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file);
+    });
+    await api('music', { slot, dataUrl, name: file.name });
+    input.value = '';
+    showToast(`♫ ${slot}. şarkı listeye eklendi`);
+  }));
+  on(`#music-slot-${slot}-clear`, async () => {
+    await api('music-default', { slot });
+    showToast(`♫ ${slot}. şarkı kaldırıldı`);
+  });
+}
 on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Varsayılan müziğe dönüldü'); });
 $('#preview-toggle').addEventListener('change', () => { previewOn = $('#preview-toggle').checked; if (previewOn) unlock(); configureAudio(); });
 $('#copy-overlay').addEventListener('click', async () => { try { await navigator.clipboard.writeText(`${location.origin}/?overlay=1`); showToast('📋 Overlay adresi kopyalandı'); } catch { showToast(`${location.origin}/?overlay=1`); } });
