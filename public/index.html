@@ -115,14 +115,24 @@
         </div>
 
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">♫</div><div><h3>Müzik ve Ses</h3><p>Yayın ekranında (overlay) çalar</p></div></div>
+          <label class="input-label" for="music-upload">ŞARKI</label>
+          <div class="now-playing" id="music-name">♫ Chopin — Cenaze Marşı (varsayılan)</div>
+          <div class="setting-inline"><input id="music-upload" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input"><button id="music-default-btn" class="small-button" disabled>Varsayılana dön</button></div>
+          <p class="setting-note">Kendi MP3 / M4A / OGG / WAV dosyanı yükle (en fazla 15 MB). Döngüde çalar, hediye ve taht duyurularında kısa süre kısılır. Dosya sadece bu bilgisayarda saklanır, GitHub'a gitmez. Telifli bir şarkıyı TikTok canlı yayında sessize alabilir ya da uyarı verebilir.</p>
           <div class="toggle-row">
-            <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Cenaze Marşı</label>
+            <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Müzik</label>
             <label class="switch"><input type="checkbox" id="sfx-toggle" checked><span></span>Efektler</label>
             <label class="switch"><input type="checkbox" id="preview-toggle"><span></span>Bu sekmede de dinle</label>
           </div>
-          <label class="input-label" for="volume">SES SEVİYESİ <b id="volume-value">65%</b></label>
-          <input id="volume" type="range" min="0" max="100" value="65" class="range">
-          <p class="setting-note">Müzik, Chopin'in Cenaze Marşı'nın (1839, kamu malı) tarayıcıda canlı sentezlenmiş hâlidir; kayıt kullanılmaz, bu yüzden TikTok'un telif filtresine takılmaz. Overlay ile bu sekme aynı anda çalarsa ses iki kez duyulur; önizlemeyi sadece test için aç.</p>
+          <div class="sliders">
+            <label class="input-label" for="volume">ANA SES <b id="volume-value">80%</b></label>
+            <input id="volume" type="range" min="0" max="100" value="80" class="range">
+            <label class="input-label" for="music-volume">MÜZİK <b id="music-volume-value">70%</b></label>
+            <input id="music-volume" type="range" min="0" max="100" value="70" class="range">
+            <label class="input-label" for="sfx-volume">EFEKTLER <b id="sfx-volume-value">60%</b></label>
+            <input id="sfx-volume" type="range" min="0" max="100" value="60" class="range">
+          </div>
+          <p class="setting-note">Ayarlar yayın ekranına anında gider. Ayarlarken "Bu sekmede de dinle"yi aç, sonra kapat; yoksa ses iki kez duyulur.</p>
         </div>
 
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">👑</div><div><h3>Fotoğraf Taşıyıcısı</h3><p>Tek kişi; 6 tabut taşıyıcısından ayrı</p></div></div>

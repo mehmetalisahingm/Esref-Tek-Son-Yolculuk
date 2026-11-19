@@ -27,10 +27,21 @@ export function createAudio() {
   const wet = ctx.createGain(); wet.gain.value = .5;
   const reverb = ctx.createConvolver(); reverb.buffer = impulse(3.8, 2.6);
   for (const bus of [musicBus, sfxBus]) { bus.connect(dry); bus.connect(reverb); }
+  // An uploaded song plays on its own clean bus (no added reverb), still under the master volume.
+  const trackBus = ctx.createGain(); trackBus.gain.value = 0; trackBus.connect(master);
+  const track = new Audio(); track.loop = true; track.preload = 'auto';
+  let trackSource = null, trackUrl = '';
+  function setTrack(url) {
+    if (url === trackUrl) return;
+    trackUrl = url;
+    if (!url) { track.pause(); track.removeAttribute('src'); track.load(); return; }
+    if (!trackSource) { trackSource = ctx.createMediaElementSource(track); trackSource.connect(trackBus); }
+    track.src = url; track.load();
+  }
   dry.connect(master); reverb.connect(wet).connect(master);
   const noise = (() => { const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; })();
 
-  let settings = { enabled: false, music: true, sfx: true, volume: .65 };
+  let settings = { enabled: false, music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6, musicUrl: '' };
   let musicOn = false, nextTime = 0, step = 0, timer = null, listeners = [];
   const lastPlayed = new Map();
 
@@ -93,17 +104,26 @@ export function createAudio() {
     const t = ctx.currentTime;
     const vol = settings.enabled ? settings.volume : 0;
     master.gain.cancelScheduledValues(t); master.gain.setTargetAtTime(vol, t, ramp / 4);
-    musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(settings.music ? .9 : 0, t, ramp / 3);
-    sfxBus.gain.setTargetAtTime(settings.sfx ? 1 : 0, t, .05);
+    setTrack(settings.musicUrl || '');
+    const useTrack = Boolean(trackUrl);
+    const level = settings.music ? settings.musicVolume : 0;
+    musicBus.gain.cancelScheduledValues(t); musicBus.gain.setTargetAtTime(useTrack ? 0 : level * 1.3, t, ramp / 3);
+    trackBus.gain.cancelScheduledValues(t); trackBus.gain.setTargetAtTime(useTrack ? level : 0, t, ramp / 3);
+    sfxBus.gain.setTargetAtTime(settings.sfx ? settings.sfxVolume * 1.5 : 0, t, .05);
     const shouldPlay = settings.enabled && settings.music && ctx.state === 'running';
-    if (shouldPlay && !musicOn) { musicOn = true; nextTime = ctx.currentTime + .25; step = 0; scheduler(); timer = setInterval(scheduler, 250); }
-    if (!shouldPlay && musicOn) { musicOn = false; clearInterval(timer); timer = null; }
+    const synth = shouldPlay && !useTrack;
+    if (synth && !musicOn) { musicOn = true; nextTime = ctx.currentTime + .25; step = 0; scheduler(); timer = setInterval(scheduler, 250); }
+    if (!synth && musicOn) { musicOn = false; clearInterval(timer); timer = null; }
+    if (shouldPlay && useTrack) { if (track.paused) track.play().catch(() => {}); }
+    else if (!track.paused) track.pause();
   }
   function duck(seconds = 3) {
     const t = ctx.currentTime;
-    musicBus.gain.cancelScheduledValues(t);
-    musicBus.gain.setTargetAtTime(settings.music ? .35 : 0, t, .08);
-    musicBus.gain.setTargetAtTime(settings.music ? .9 : 0, t + seconds, .8);
+    const level = settings.music ? settings.musicVolume : 0;
+    const bus = trackUrl ? trackBus : musicBus, full = trackUrl ? level : level * 1.3;
+    bus.gain.cancelScheduledValues(t);
+    bus.gain.setTargetAtTime(full * .35, t, .08);
+    bus.gain.setTargetAtTime(full, t + seconds, .8);
   }
   // ——— Effects ———
   const sfx = {

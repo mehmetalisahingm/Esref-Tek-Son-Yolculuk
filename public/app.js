@@ -8,7 +8,7 @@ const forceFallback = qs.has('fallback');
 if (overlay) document.body.classList.add('overlay');
 if (qs.has('compact')) document.body.classList.add('compact');
 
-const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], audio: { music: true, sfx: true, volume: .65 }, revision: 0 };
+const initial = { connected: false, connecting: false, connectionMessage: '', username: '', demo: true, carriers: Array(6).fill(null), portraitBearer: null, portraitCost: 500, portraitUrl: '', giftPoints: 0, people: [], events: [], gifts: 0, totalChats: 0, likes: 0, viewerCount: null, leaderboard: [], audio: { music: true, sfx: true, volume: .8, musicVolume: .7, sfxVolume: .6 }, musicUrl: '', musicName: '', revision: 0 };
 let state = initial;
 let stage = null;
 let firstState = true;
@@ -28,11 +28,13 @@ for (const img of document.querySelectorAll('#portrait-thumb,#takeover-photo')) 
   img.addEventListener('error', () => img.parentElement.classList.remove('has-photo'));
 }
 
+const volumeSliders = [['#volume', 'volume'], ['#music-volume', 'musicVolume'], ['#sfx-volume', 'sfxVolume']];
+
 // ——— Audio ———
 const audio = createAudio();
 let previewOn = false;
 function audioEnabled() { return overlay || previewOn; }
-function configureAudio() { audio.configure({ enabled: audioEnabled(), music: state.audio.music, sfx: state.audio.sfx, volume: state.audio.volume }); refreshGate(); }
+function configureAudio() { audio.configure({ enabled: audioEnabled(), ...state.audio, musicUrl: state.musicUrl || '' }); refreshGate(); }
 function refreshGate() { const gate = $('#sound-gate'); gate.hidden = !(audioEnabled() && !audio.running); }
 audio.onstate(refreshGate);
 const unlock = () => audio.unlock().then(refreshGate);
@@ -209,9 +211,14 @@ function updateStatus(s) {
   if (s.username && document.activeElement !== $('#tiktok-user') && !$('#tiktok-user').value) $('#tiktok-user').value = s.username;
 }
 function updateAudioPanel(s) {
-  if (document.activeElement !== $('#volume')) $('#volume').value = Math.round(s.audio.volume * 100);
-  text('#volume-value', `${Math.round(s.audio.volume * 100)}%`);
+  for (const [id, key] of volumeSliders) {
+    const v = Math.round((s.audio[key] ?? 0) * 100);
+    if (document.activeElement !== $(id)) $(id).value = v;
+    text(`${id}-value`, `${v}%`);
+  }
   $('#music-toggle').checked = s.audio.music; $('#sfx-toggle').checked = s.audio.sfx;
+  text('#music-name', s.musicUrl ? `♫ ${s.musicName || 'Yüklenen şarkı'}` : '♫ Chopin — Cenaze Marşı (varsayılan)');
+  $('#music-default-btn').disabled = !s.musicUrl;
 }
 function showState(next) {
   state = next;
@@ -304,8 +311,18 @@ on('#demo-gift-btn', async () => {
 on('#demo-btn', async () => { await api('demo'); showToast('✦ Demo sahnesi yüklendi'); });
 on('#reset-btn', async () => { if (!confirm('Kortej, taşıyıcılar ve sayaçlar sıfırlansın mı?')) return; await api('reset'); showToast('Sahne temizlendi'); });
 for (const [sel, key] of [['#music-toggle', 'music'], ['#sfx-toggle', 'sfx']]) $(sel).addEventListener('change', wrap(() => api('audio', { [key]: $(sel).checked })));
-let volTimer = null;
-$('#volume').addEventListener('input', () => { text('#volume-value', `${$('#volume').value}%`); clearTimeout(volTimer); volTimer = setTimeout(wrap(() => api('audio', { volume: Number($('#volume').value) / 100 })), 120); });
+for (const [id, key] of volumeSliders) {
+  let timer = null;
+  $(id).addEventListener('input', () => { text(`${id}-value`, `${$(id).value}%`); clearTimeout(timer); timer = setTimeout(wrap(() => api('audio', { [key]: Number($(id).value) / 100 })), 120); });
+}
+$('#music-upload').addEventListener('change', wrap(async () => {
+  const file = $('#music-upload').files?.[0]; if (!file) return;
+  if (file.size > 15 * 1024 * 1024) throw new Error('Şarkı 15 MB altında olmalı');
+  showToast('♫ Şarkı yükleniyor…');
+  const dataUrl = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+  await api('music', { dataUrl, name: file.name }); $('#music-upload').value = ''; showToast('♫ Şarkı yayına eklendi');
+}));
+on('#music-default-btn', async () => { await api('music-default'); showToast('♫ Varsayılan müziğe dönüldü'); });
 $('#preview-toggle').addEventListener('change', () => { previewOn = $('#preview-toggle').checked; if (previewOn) unlock(); configureAudio(); });
 $('#copy-overlay').addEventListener('click', async () => { try { await navigator.clipboard.writeText(`${location.origin}/?overlay=1`); showToast('📋 Overlay adresi kopyalandı'); } catch { showToast(`${location.origin}/?overlay=1`); } });
 text('#overlay-url', `${location.origin}/?overlay=1`);

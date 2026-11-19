@@ -137,6 +137,31 @@ test('audio settings are validated and shared through state',async()=>{
   await post('audio',{music:true,volume:.65});
 });
 
+test('an uploaded song is validated, served with byte ranges and can be removed',async()=>{
+  const fakeMp3=Buffer.concat([Buffer.from('ID3'),Buffer.alloc(64,1)]);
+  const up=await post('music',{dataUrl:'data:audio/mpeg;base64,'+fakeMp3.toString('base64'),name:'Benim Şarkım.mp3'});
+  assert.match(up.musicUrl,/^\/music-custom\.mp3/);
+  let s=await getState();
+  assert.equal(s.musicName,'Benim Şarkım');
+  const part=await fetch(base+s.musicUrl,{headers:{Range:'bytes=0-2'}});
+  assert.equal(part.status,206);
+  assert.equal(Buffer.from(await part.arrayBuffer()).toString(),'ID3');
+  const bad=await fetch(base+'/api/music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dataUrl:'data:audio/mpeg;base64,'+Buffer.from('not really audio at all').toString('base64')})});
+  assert.equal(bad.status,400);
+  await post('music-default');
+  s=await getState();
+  assert.equal(s.musicUrl,'');
+});
+
+test('music and effect volumes are separate and validated',async()=>{
+  await post('audio',{musicVolume:.3,sfxVolume:.9});
+  const s=await getState();
+  assert.equal(s.audio.musicVolume,.3);assert.equal(s.audio.sfxVolume,.9);
+  const bad=await fetch(base+'/api/audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sfxVolume:-1})});
+  assert.equal(bad.status,400);
+  await post('audio',{musicVolume:.7,sfxVolume:.6});
+});
+
 test('static files cannot escape the public folder',async()=>{
   const r=await fetch(base+'/%2e%2e/server.mjs');
   assert.notEqual(r.status,200);
