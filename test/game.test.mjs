@@ -225,3 +225,13 @@ test('static files cannot escape the public folder',async()=>{
   assert.notEqual(v.status,200);
   await post('demo');
 });
+
+test('the coffin ledger lists the six biggest likers in order', async()=>{
+  await post('reset');
+  for(let i=0;i<8;i++) await post('like',{name:'b'+i,id:'board-'+i,count:5+i*3});
+  const s=await getState();
+  assert.equal(s.likeBoard.length,6);
+  assert.deepEqual(s.likeBoard.map(p=>p.id),['board-7','board-6','board-5','board-4','board-3','board-2']);
+  assert.ok(s.likeBoard.every(p=>p.carrying));
+  await post('demo');
+});

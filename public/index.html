@@ -35,10 +35,20 @@
                 <span class="counter candle-counter" title="Beğeni">💗 <b id="like-count">0</b></span>
               </div>
             </div>
-            <div class="title-group">
-              <span class="eyebrow"><span class="ornament"></span>BİR VEDA HİKÂYESİ<span class="ornament"></span></span>
+            <div class="title-banner">
               <h1><span class="shimmer">SON YOLCULUK</span></h1>
-              <div class="title-sub">EŞREF&nbsp;TEK</div>
+              <span class="title-badge">EŞREF TEK</span>
+            </div>
+            <div class="throne-card status-panel" id="throne-card">
+              <div class="throne-photo"><b class="portrait-monogram">ET</b><img id="portrait-thumb" alt="" referrerpolicy="no-referrer"><i class="ribbon"></i></div>
+              <div class="throne-copy">
+                <span class="throne-kicker">👑 EŞREF TEK'İN FOTOĞRAFINI TAŞIYAN</span>
+                <strong id="portrait-holder">Taht boş</strong>
+                <div class="progress"><span id="challenge-bar"></span></div>
+                <small id="challenge-text">İlk hediyeyi gönderen fotoğrafı taşır</small>
+              </div>
+              <div class="throne-points"><b id="holder-points">—</b><small>hediye</small></div>
+              <div class="throne-points candles"><b>🕯️<span id="candle-total">0</span></b><small>mum</small></div>
             </div>
           </div>
 
@@ -56,27 +66,20 @@
             </div>
           </div>
 
-          <div class="hud-board">
-            <div class="rules-strip">
-              <div class="rule"><i>❤️</i><span><b>En çok beğenen 6</b> → tabut</span></div>
-              <div class="rule"><i>🕯️</i><span><b>Takip eden mum yakar</b> · <em id="candle-total">0</em></span></div>
-              <div class="rule gold"><i>🎁</i><span><b>En çok hediye</b> → fotoğraf</span></div>
+          <div class="side-board">
+            <div class="ledger">
+              <div class="ledger-title">⚰️ TABUT DEFTERİ <small>en çok beğenen 6</small></div>
+              <ol id="like-board"><li class="ledger-empty">İlk beğenen tabutu omuzlar</li></ol>
             </div>
-            <div class="throne-card" id="throne-card">
-              <div class="throne-photo"><b class="portrait-monogram">ET</b><img id="portrait-thumb" alt="" referrerpolicy="no-referrer"><i class="ribbon"></i></div>
-              <div class="throne-copy">
-                <span class="throne-kicker">👑 EŞREF TEK'İN FOTOĞRAFINI TAŞIYAN · EN ÇOK HEDİYE</span>
-                <strong id="portrait-holder">@efsane.dostu</strong>
-                <div class="progress"><span id="challenge-bar"></span></div>
-                <small id="challenge-text">İlk hediyeyi gönderen fotoğrafı taşır</small>
-              </div>
-              <div class="throne-points"><b id="holder-points">0</b><small>hediye</small></div>
+            <div class="action-cards">
+              <div class="act"><i>💬</i><b>Yorum yaz</b><small>korteje katıl</small></div>
+              <div class="act heart"><i>❤️</i><b>Beğen</b><small>tabutu taşı · ilk 6</small></div>
+              <div class="act candle"><i>🕯️</i><b>Takip et</b><small>mum yak</small></div>
+              <div class="act gold"><i>🎁</i><b>Hediye at</b><small>fotoğrafı taşı</small></div>
+              <div class="act goal"><i>👍</i><b id="goal-count">0/1.000</b><small>beğeni hedefi</small><div class="progress"><span id="goal-bar"></span></div></div>
             </div>
-            <div class="leader-row" id="leaderboard"></div>
-            <div class="carriers-heading"><span class="heading-line"></span><span>✦ TABUTU TAŞIYANLAR · EN ÇOK BEĞENEN 6 KİŞİ ✦</span><span class="heading-line"></span></div>
-            <div class="carriers-grid" id="carriers-grid"></div>
-            <div class="cta" id="cta"><span id="cta-text">💗 En çok beğeni atanlar → tabutu omuzlar</span></div>
           </div>
+          <div hidden><div id="leaderboard"></div><div id="carriers-grid"></div><span id="cta-text"></span></div>
 
           <button class="sound-gate" id="sound-gate" type="button" hidden>🔊 Sesi başlat</button>
         </div>

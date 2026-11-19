@@ -3,7 +3,10 @@ export function createScene(canvas, labelsRoot, T) {
   const SPEED = .85;           // world units per second the road scrolls under the procession
   const PORTRAIT_Z = 4.4;      // the portrait bearer walks well ahead so the frame never hides the coffin
   const MAX_CROWD = 60;
-  const HUD_BOTTOM = .2;      // the info board covers the top 20% of the frame; names hide under it
+  const HUD_BOTTOM = .125;    // title + status bar cover the top of the frame
+  const SHIFT_X = .12;        // the procession sits left of centre, clear of the cards on the right
+  // Screen areas (fractions of the frame) covered by the overlay UI: names are not drawn there.
+  const blocked = (fx, fy) => fy < HUD_BOTTOM || (fx > .52 && fy < .32) || (fx > .76 && fy < .70);
 
   // ——— Renderer & scene ———
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -423,17 +426,17 @@ export function createScene(canvas, labelsRoot, T) {
 
   // ——— Camera ———
   const views = [
-    { pos: new T.Vector3(0, 9, 18), look: new T.Vector3(0, 2.5, 1) },     // Klasik
-    { pos: new T.Vector3(7.2, 9, 16.6), look: new T.Vector3(.2, 2.5, 1) },    // Yandan
-    { pos: new T.Vector3(-3, 7.6, 18.4), look: new T.Vector3(0, 2.6, 1.2) },   // Alçak açı
+    { pos: new T.Vector3(0, 10, 19), look: new T.Vector3(0, 1.5, 0) },     // Klasik
+    { pos: new T.Vector3(7.6, 10, 17.4), look: new T.Vector3(.2, 1.5, 0) },    // Yandan
+    { pos: new T.Vector3(-3, 8.6, 19.4), look: new T.Vector3(0, 1.8, .4) },   // Alçak açı
   ];
   let cameraMode = 3; // 3 = automatic cinematic drift
   const camPos = views[0].pos.clone(), camLook = views[0].look.clone();
   camera.position.copy(camPos); camera.lookAt(camLook);
   function cameraGoal(t) {
     if (cameraMode < 3) return views[cameraMode];
-    const yaw = Math.sin(t * .045) * .26, rise = Math.sin(t * .031 + 1) * .5, dist = 17.9 + Math.sin(t * .027) * .5;
-    return { pos: new T.Vector3(Math.sin(yaw) * dist, 9 + rise, Math.cos(yaw) * dist), look: new T.Vector3(Math.sin(yaw) * -.3, 2.5, 1) };
+    const yaw = Math.sin(t * .045) * .24, rise = Math.sin(t * .031 + 1) * .5, dist = 18.9 + Math.sin(t * .027) * .5;
+    return { pos: new T.Vector3(Math.sin(yaw) * dist, 10 + rise, Math.cos(yaw) * dist), look: new T.Vector3(Math.sin(yaw) * -.3, 1.5, 0) };
   }
 
   // ——— Labels (DOM) with simple collision avoidance ———
@@ -455,12 +458,13 @@ export function createScene(canvas, labelsRoot, T) {
       const p = project(vec, rect);
       const u = rect.width / 540;
       if (talking) p.y = Math.max(p.y, rect.height * HUD_BOTTOM + 50 * u);
+      const isBlocked = blocked(p.x / rect.width, p.y / rect.height);
       if (p.z > 1 || p.x < -40 || p.x > rect.width + 40 || p.y < 0 || p.y > rect.height) { lab.style.display = 'none'; continue; }
       const chars = (rig.handle.textContent || '').length;
       const w = (talking ? 170 : Math.min(120, chars * (t.role === 'crowd' ? 5.4 : 6.2) + 12)) * u, h = (talking ? 50 : t.role === 'crowd' ? 13 : 18) * u;
       const box = t.role === 'portrait' ? { l: p.x - 80, r: p.x + 80, t: p.y - 22, b: p.y } : { l: p.x - w / 2, r: p.x + w / 2, t: p.y - h, b: p.y };
       const hits = o => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t;
-      if (t.role === 'crowd' && (talking ? placed.some(o => o.talking && hits(o)) : (p.y < rect.height * HUD_BOTTOM || placed.some(hits)))) { lab.style.display = 'none'; continue; }
+      if (t.role === 'crowd' && (talking ? placed.some(o => o.talking && hits(o)) : (isBlocked || placed.some(hits)))) { lab.style.display = 'none'; continue; }
       box.talking = talking;
       placed.push(box); if (t.role === 'crowd') crowdShown++;
       lab.style.display = 'block';
@@ -482,7 +486,7 @@ export function createScene(canvas, labelsRoot, T) {
   function resize() {
     const width = canvas.clientWidth || 540, height = canvas.clientHeight || 960;
     renderer.setSize(width, height, false);
-    camera.aspect = width / height; camera.updateProjectionMatrix();
+    camera.aspect = width / height; camera.setViewOffset(width, height, width * SHIFT_X, 0, width, height);
     composer?.setSize(width, height);
   }
   // Optional bloom: lanterns, candles, gold trim and sparks glow softly.
