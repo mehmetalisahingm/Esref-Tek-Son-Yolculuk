@@ -51,7 +51,7 @@ Hâlâ olmuyorsa `git status`, `git remote -v`, `git branch --show-current` ve `
 
 ## Test ve çalışma
 
-- `npm test` — oyun mantığının 28 otomatik testi.
+- `npm test` — oyun mantığının 29 otomatik testi.
 - `node server.mjs` — yerel oyun: http://localhost:3000
 - `http://localhost:3000/?overlay=1` — OBS/TikTok yayın görünümü.
 - Gerçek TikTok verileri için `tiktok-live-connector` isteğe bağlı kurulur; normal Git push için gerekli değildir.

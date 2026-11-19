@@ -199,7 +199,13 @@ body.compact .float-lane{bottom:calc(var(--u)*420px)}
 .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;margin-bottom:14px;border-radius:10px;background:#091012;border:1px solid #2b3a3d}
 .mode-tabs button{border:0;background:none;color:#9fb0a8;font-size:12.5px;font-weight:800;padding:9px 8px;border-radius:7px}
 .mode-tabs button.active{background:linear-gradient(180deg,#e7c47e,#b48a43);color:#171106}
-.key-label{margin-top:12px}
+.mode-tabs button small{font-size:10px;font-weight:700;opacity:.75;margin-left:4px}
+.setup-steps{margin:0 0 12px;padding-left:20px;font-size:12.5px;line-height:1.55;color:#c8d6d0}
+.setup-steps li{margin-bottom:5px}
+.setup-steps a{color:var(--gold-2)}
+.advanced{margin-top:4px;font-size:12.5px;color:#9fb0a8}
+.advanced summary{cursor:pointer;font-weight:700;margin-bottom:8px}
+.advanced summary b{color:var(--gold)}
 .key-label .optional{color:#6f807a;font-weight:600;letter-spacing:.5px;text-transform:none}
 .setting-note a{color:var(--gold-2)}
 .bridge-diag{margin-top:12px;padding:11px 12px;border-radius:10px;background:#091012;border:1px solid #223035}

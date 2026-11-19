@@ -1,6 +1,6 @@
 // Brings TikTok LIVE events (comments, gifts, likes, follows, joins, viewer count) into the game.
 // Two transports feed the same normalised events:
-//   • direct    — tiktok-live-connector talks to TikTok itself (optional Euler Stream sign key)
+//   • direct    — tiktok-live-connector talks to TikTok itself (needs a third-party sign service)
 //   • tikfinity — reads the local WebSocket that the TikFinity desktop app exposes (ws://127.0.0.1:21213/)
 
 export const DEFAULT_TIKFINITY_URL = 'ws://127.0.0.1:21213/';
@@ -93,10 +93,10 @@ export function explainError(err, username = '') {
   }
   if (name === 'PremiumFeatureError') return { delay: 60000, message: 'Bu yayın için ücretli imza özelliği gerekiyor. TikFinity köprüsünü dene.' };
   if (name === 'SignatureRateLimitError' || /rate.?limit|too many requests|\b429\b/i.test(text)) {
-    return { delay: 60000, message: 'TikTok imza servisinin ücretsiz limiti doldu. Euler Stream API anahtarı gir ya da TikFinity köprüsüne geç.' };
+    return { delay: 60000, message: 'TikTok imza servisinin ücretsiz limiti doldu. TikFinity (WebSocket) yoluna geç.' };
   }
   if (name === 'SignAPIError' || /sign(ature)?\b.*(api|key|401|403|unauthori[sz]ed|forbidden)/i.test(text)) {
-    return { delay: 30000, message: 'İmza servisi bağlantıyı reddetti. API anahtarını kontrol et ya da TikFinity köprüsüne geç.' };
+    return { delay: 30000, message: 'İmza servisi bağlantıyı reddetti. TikFinity (WebSocket) yoluna geç.' };
   }
   if (name === 'ConnectTimeoutError' || /timed? ?out|ETIMEDOUT/i.test(text)) return { message: 'TikTok yanıt vermedi (zaman aşımı). Tekrar deneniyor.' };
   if (/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|fetch failed|network|getaddrinfo/i.test(text)) {
@@ -106,9 +106,20 @@ export function explainError(err, username = '') {
 }
 
 // ——— Bridge controller ———
-export function createBridge({ onEvent, onStatus, loadConnector = () => import('tiktok-live-connector'), WebSocketImpl }) {
-  const status = { mode: 'direct', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, lastEventAt: 0, lastEventType: '', since: 0 };
+export function createBridge({ onEvent, onStatus, loadConnector = () => import('tiktok-live-connector'), WebSocketImpl, staleMs = 60000 }) {
+  const status = { mode: 'tikfinity', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, lastEventAt: 0, lastEventType: '', since: 0 };
   let opts = null, wanted = false, transport = null, retryTimer = null, attempt = 0, generation = 0;
+  let connectedMessage = '', lastAnyAt = 0, stale = false;
+  // An open TikFinity socket does not prove TikFinity is attached to the LIVE, so warn when nothing arrives.
+  const watchdog = setInterval(() => {
+    if (status.state !== 'connected' || stale) return;
+    if (Date.now() - Math.max(lastAnyAt, status.since) < staleMs) return;
+    stale = true;
+    set({ message: opts?.mode === 'tikfinity'
+      ? `TikFinity açık ama ${Math.round(staleMs / 1000)} sn'dir olay gelmiyor. TikFinity uygulamasında TikTok yayınına bağlı olduğunu kontrol et.`
+      : `${Math.round(staleMs / 1000)} sn'dir yayından olay gelmiyor. Yayın açık mı?` });
+  }, Math.min(5000, Math.max(50, staleMs / 4)));
+  watchdog.unref?.();
 
   const set = (patch) => { Object.assign(status, patch); onStatus?.(status); };
   function deliver(ev, gen) {
@@ -118,6 +129,8 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
       set({ state: 'idle', message: 'Canlı yayın sona erdi. Yeniden yayına çıkınca tekrar bağlan.' });
       onEvent?.(ev); return;
     }
+    lastAnyAt = Date.now();
+    if (stale) { stale = false; status.message = connectedMessage; }
     if (ev.type in status.counts) status.counts[ev.type] += ev.type === 'like' ? (ev.count || 1) : 1;
     if (ev.type !== 'viewers') { status.lastEventAt = Date.now(); status.lastEventType = ev.type; }
     try { onEvent?.(ev); } catch (err) { console.warn('Olay işlenemedi:', err?.message || err); }
@@ -169,7 +182,7 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
         if (!opened) reject(Object.assign(new Error(info.message), { bridgeInfo: info }));
         else if (wanted) { transport = null; scheduleRetry(info); }
       };
-      ws.onopen = () => { opened = true; resolve(`TikFinity köprüsüne bağlandı · ${url}`); };
+      ws.onopen = () => { opened = true; resolve('TikFinity\'ye bağlandı · olaylar TikFinity\'den geliyor'); };
       ws.onmessage = m => deliver(fromTikfinity(typeof m.data === 'string' ? m.data : String(m.data)), gen);
       ws.onerror = () => {};
       ws.onclose = fail;
@@ -183,7 +196,7 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
     try {
       const message = await (opts.mode === 'tikfinity' ? openTikfinity(gen) : openDirect(gen));
       if (gen !== generation) return status;
-      attempt = 0;
+      attempt = 0; connectedMessage = message; stale = false; lastAnyAt = 0;
       set({ state: 'connected', message, since: Date.now() });
     } catch (err) {
       if (gen !== generation) return status;
@@ -206,5 +219,6 @@ export function createBridge({ onEvent, onStatus, loadConnector = () => import('
       return open();
     },
     stop(message = 'Bağlantı kapalı') { wanted = false; generation++; close(); set({ state: 'idle', message }); },
+    dispose() { clearInterval(watchdog); this.stop(); },
   };
 }

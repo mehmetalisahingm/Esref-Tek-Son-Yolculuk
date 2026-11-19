@@ -225,18 +225,18 @@ function updateStatus(s) {
   pip.className = `connection-pip${s.connected ? ' connected' : ''}`;
   pip.textContent = s.connected ? 'BAĞLI' : b.state === 'waiting' ? 'YAYIN BEKLENİYOR' : s.connecting ? 'BAĞLANIYOR' : b.state === 'error' ? 'HATA' : s.demo ? 'DEMO' : 'KAPALI';
   text('#connection-hint', s.connectionMessage || 'TikTok bağlantısı kurulmadı.');
-  $('#connection-hint').classList.toggle('error', b.state === 'error' || b.state === 'reconnecting');
+  $('#connection-hint').classList.toggle('error', b.state === 'error' || b.state === 'reconnecting' || /olay gelmiyor/.test(b.message || ''));
   const busy = b.state === 'connecting';
   $('#connect-btn').disabled = busy;
   $('#connect-btn').textContent = busy ? '◉ Bağlanıyor…' : s.connected ? '◉ Yeniden bağlan' : '◉ Yayına Bağlan';
   $('#disconnect-btn').disabled = !['connected', 'connecting', 'reconnecting', 'waiting'].includes(b.state);
   $('#demo-btn').disabled = s.connected || s.connecting;
-  if (bridgeMode === null) setBridgeMode(b.savedMode || 'direct');
+  if (bridgeMode === null) setBridgeMode(b.savedMode || 'tikfinity');
   if (b.username && document.activeElement !== $('#tiktok-user') && !$('#tiktok-user').value) $('#tiktok-user').value = b.username;
   if (b.tikfinityUrl && document.activeElement !== $('#tikfinity-url')) $('#tikfinity-url').value = b.tikfinityUrl;
   text('#sign-key-state', b.hasSignKey ? '✓ kayıtlı' : '');
   $('#sign-key-clear').hidden = !b.hasSignKey;
-  $('#sign-key').placeholder = b.hasSignKey ? '•••••••• (değiştirmek için yeni anahtar yaz)' : 'Euler Stream API anahtarı';
+  $('#sign-key').placeholder = b.hasSignKey ? '•••••••• (değiştirmek için yeni anahtar yaz)' : 'İmza servisi API anahtarı';
   const dot = $('#diag-dot');
   dot.className = `diag-dot${b.state === 'connected' ? ' live' : ['waiting', 'connecting', 'reconnecting'].includes(b.state) ? ' wait' : b.state === 'error' ? ' bad' : ''}`;
   for (const k of Object.keys(bridgeLabels)) {
@@ -343,7 +343,7 @@ $('#viewer-comment').addEventListener('keydown', e => { if (e.key === 'Enter') $
 $('#viewer-name').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-btn').click(); });
 $('#tiktok-user').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connect-btn').click(); });
 on('#connect-btn', async () => {
-  const payload = { mode: bridgeMode || 'direct', username: $('#tiktok-user').value.trim().replace(/^@/, ''), tikfinityUrl: $('#tikfinity-url').value.trim() };
+  const payload = { mode: bridgeMode || 'tikfinity', username: $('#tiktok-user').value.trim().replace(/^@/, ''), tikfinityUrl: $('#tikfinity-url').value.trim() };
   const key = $('#sign-key').value.trim(); if (key) payload.signApiKey = key;
   const res = await api('connect', payload);
   $('#sign-key').value = '';

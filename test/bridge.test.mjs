@@ -33,7 +33,7 @@ test('connection errors become clear Turkish messages with the right retry polic
   class SignatureRateLimitError extends Error {}
   assert.equal(explainError(new UserOfflineError('x'), 'esref').wait, true);
   assert.match(explainError(new UserOfflineError('x'), 'esref').message, /@esref şu an canlı yayında değil/);
-  assert.match(explainError(new SignatureRateLimitError('x')).message, /API anahtarı/);
+  assert.match(explainError(new SignatureRateLimitError('x')).message, /TikFinity/);
   assert.equal(explainError(new Error('TikTok paketi eksik')).fatal, true);
   assert.match(explainError(new Error('getaddrinfo ENOTFOUND www.tiktok.com')).message, /İnternet/);
 });
@@ -190,4 +190,16 @@ test('stream end stops the bridge with a clear message', async () => {
   fc.made[0].emit('streamEnd', {});
   assert.equal(b.status.state, 'idle'); assert.equal(b.wanted, false);
   assert.match(b.status.message, /sona erdi/);
+});
+
+test('an open TikFinity socket with no events triggers a visible warning, cleared by the next event', async () => {
+  let sock;
+  class FakeWS { constructor() { sock = this; setTimeout(() => this.onopen?.(), 5); } close() {} }
+  const b = createBridge({ onEvent: () => {}, WebSocketImpl: FakeWS, staleMs: 150 });
+  assert.equal((await b.start({ mode: 'tikfinity' })).state, 'connected');
+  await sleep(400);
+  assert.match(b.status.message, /olay gelmiyor/);
+  sock.onmessage({ data: JSON.stringify({ event: 'chat', data: { uniqueId: 'a', userId: '1', comment: 'x' } }) });
+  assert.doesNotMatch(b.status.message, /olay gelmiyor/);
+  b.dispose();
 });

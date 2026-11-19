@@ -60,16 +60,16 @@ Overlay sesi otomatik başlatamazsa sağ üstte **🔊 Sesi başlat** düğmesi 
 
 Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve izleyici sayısını** oyuna taşır. Kontrol panelindeki **TikTok LIVE Köprüsü** bölümünde iki yol var:
 
-**1. Doğrudan (varsayılan)**
-1. TikTok'ta canlı yayını aç.
-2. Panelde kullanıcı adını **@ olmadan** yaz, **Yayına Bağlan**'a bas.
-3. Yayın henüz açık değilse köprü "Yayın bekleniyor" der ve yayın başlayınca 15 saniye içinde kendiliğinden bağlanır.
-4. "İmza limiti" hatası görürsen [eulerstream.com](https://www.eulerstream.com)'dan ücretsiz bir API anahtarı al ve **İmza anahtarı** alanına yapıştır. Anahtar yalnızca bilgisayardaki `config.local.json` dosyasında saklanır, tarayıcıya ve GitHub'a gitmez.
+**1. TikFinity · WebSocket (önerilen, varsayılan)**
+1. [TikFinity](https://tikfinity.zerody.one/)'nin **Windows masaüstü uygulamasını** kur. Uygulama oyunla aynı bilgisayarda açık olmalı.
+2. TikFinity'de TikTok hesabınla giriş yap ve yayınına bağlan; TikFinity'de bağlı göründüğünden emin ol.
+3. Panelde **TikFinity · WebSocket** sekmesinde adresi `ws://127.0.0.1:21213/` olarak bırak, **Yayına Bağlan**'a bas.
+4. Olaylar TikFinity'nin yerel WebSocket akışından gelir; imza anahtarı ya da ücretli servis gerekmez. Bağlıyken 60 saniye olay gelmezse panel uyarır (çoğunlukla TikFinity yayına bağlı değildir).
 
-**2. TikFinity üzerinden (yedek)**
-1. TikFinity masaüstü uygulamasını aç ve TikTok hesabınla yayınına bağla.
-2. Panelde **TikFinity üzerinden** sekmesini seç, adresi `ws://127.0.0.1:21213/` olarak bırak, **Yayına Bağlan**'a bas.
-3. Oyun olayları TikFinity'nin bu bilgisayardaki yerel akışından okur. Doğrudan bağlantı TikTok tarafında takılırsa bu yol genelde çalışır.
+**2. Doğrudan (yedek)**
+1. TikTok'ta canlı yayını aç, panelde **Doğrudan** sekmesinde kullanıcı adını **@ olmadan** yaz ve bağlan.
+2. Bu yol TikTok'un istediği imzayı üçüncü taraf bir imza servisinden alır; anahtarsız kullanım sınırlı olduğu için takılabilir. Takılırsa TikFinity yolunu kullan. Anahtarın varsa "Gelişmiş" bölümüne yapıştırabilirsin; yalnızca `config.local.json`'da saklanır.
+3. Yayın henüz açık değilse köprü bekler ve yayın başlayınca kendiliğinden bağlanır.
 
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 
@@ -111,7 +111,7 @@ Kanal D resmî karakter portresi varsayılan olarak uzak URL'den yüklenir; inte
 ## Dosyalar
 
 `server.mjs` — oyun durumu, rotasyon, SSE, API  
-`bridge.mjs` — TikTok LIVE köprüsü (doğrudan ve TikFinity)  
+`bridge.mjs` — TikTok LIVE köprüsü (TikFinity WebSocket ve doğrudan)  
 `public/index.html` — dikey oyun ve yayın kontrol paneli  
 `public/style.css` — duyarlı tasarım  
 `public/app.js` — tarayıcı yönetimi, alarmlar, kontrol paneli  
@@ -129,7 +129,7 @@ Kaynak kodlar `main` dalında tutulabilir. Utku'nun GitHub hesabı `Utkuuzun14`;
 repo açıldıktan sonra GitHub'da **Settings → Collaborators → Add people** kısmından
 bu hesabı davet edin. Ortak geliştirmede doğrudan `main` yerine özellik dalı + PR kullanın.
 
-`npm test` komutu 28 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
+`npm test` komutu 29 senaryoyu doğrular (köprü için sahte TikFinity sunucusuyla uçtan uca test dahil). GitHub Actions her push ve PR'da testleri çalıştırır.
 
 ### İlk GitHub yüklemesi (Windows)
 
