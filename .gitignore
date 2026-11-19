@@ -4,4 +4,5 @@ node_modules/
 .DS_Store
 public/portrait-custom.*
 public/music-custom.*
+public/music-custom-*
 *.zip
