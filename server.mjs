@@ -250,7 +250,7 @@ function originAllowed(req) {
 }
 // ——— Live bridge settings (kept in a local, git-ignored file; the sign key never leaves this computer) ———
 const CONFIG_FILE = process.env.SON_YOLCULUK_CONFIG || path.join(DIR, 'config.local.json');
-let bridgeConfig = { mode: 'tikfinity', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL };
+let bridgeConfig = { mode: 'direct', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL };
 try { bridgeConfig = { ...bridgeConfig, ...JSON.parse(await fs.readFile(CONFIG_FILE, 'utf8')) }; } catch {}
 async function saveBridgeConfig() {
   try { await fs.writeFile(CONFIG_FILE, JSON.stringify(bridgeConfig, null, 2)); } catch (err) { console.warn('Ayar dosyası yazılamadı:', err?.message || err); }
@@ -304,7 +304,7 @@ function ingest(ev) {
 const bridge = createBridge({ onEvent: ingest, onStatus: () => emit() });
 const isLive = () => bridge.status.state === 'connected';
 async function connect(body) {
-  const mode = body.mode === 'direct' ? 'direct' : 'tikfinity';
+  const mode = body.mode === 'tikfinity' ? 'tikfinity' : 'direct';
   const username = normalize(body.username ?? bridgeConfig.username);
   if (mode === 'direct' && !username) throw Object.assign(new Error('TikTok kullanıcı adını yaz'), { status: 400 });
   if (typeof body.signApiKey === 'string' && body.signApiKey.trim()) bridgeConfig.signApiKey = body.signApiKey.trim().slice(0, 200);

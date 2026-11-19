@@ -1,6 +1,6 @@
 // Brings TikTok LIVE events (comments, gifts, likes, follows, joins, viewer count) into the game.
 // Two transports feed the same normalised events:
-//   • direct    — tiktok-live-connector talks to TikTok itself (needs a third-party sign service)
+//   • direct    — tiktok-live-connector talks to TikTok's WebSocket itself, signed with the pasted API token
 //   • tikfinity — reads the local WebSocket that the TikFinity desktop app exposes (ws://127.0.0.1:21213/)
 
 export const DEFAULT_TIKFINITY_URL = 'ws://127.0.0.1:21213/';
@@ -91,12 +91,12 @@ export function explainError(err, username = '') {
   if (name === 'UserOfflineError' || /offline|isn'?t online|not (currently )?live|live has ended|LIVE_NOT_STARTED/i.test(text)) {
     return { wait: true, message: `${at} şu an canlı yayında değil. Yayını açınca otomatik bağlanacak.` };
   }
-  if (name === 'PremiumFeatureError') return { delay: 60000, message: 'Bu yayın için ücretli imza özelliği gerekiyor. TikFinity köprüsünü dene.' };
+  if (name === 'PremiumFeatureError') return { delay: 60000, message: 'Bu yayın, token\'ının planında olmayan bir özellik istiyor. Token planını kontrol et.' };
   if (name === 'SignatureRateLimitError' || /rate.?limit|too many requests|\b429\b/i.test(text)) {
-    return { delay: 60000, message: 'TikTok imza servisinin ücretsiz limiti doldu. TikFinity (WebSocket) yoluna geç.' };
+    return { delay: 60000, message: 'İmza servisinin limiti doldu. Panelde API token\'ını kontrol et (anahtarsız kullanım çok sınırlı).' };
   }
   if (name === 'SignAPIError' || /sign(ature)?\b.*(api|key|401|403|unauthori[sz]ed|forbidden)/i.test(text)) {
-    return { delay: 30000, message: 'İmza servisi bağlantıyı reddetti. TikFinity (WebSocket) yoluna geç.' };
+    return { delay: 30000, message: 'İmza servisi token\'ı kabul etmedi. Token\'ı doğru kopyaladığından emin ol.' };
   }
   if (name === 'ConnectTimeoutError' || /timed? ?out|ETIMEDOUT/i.test(text)) return { message: 'TikTok yanıt vermedi (zaman aşımı). Tekrar deneniyor.' };
   if (/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|fetch failed|network|getaddrinfo/i.test(text)) {
@@ -107,7 +107,7 @@ export function explainError(err, username = '') {
 
 // ——— Bridge controller ———
 export function createBridge({ onEvent, onStatus, loadConnector = () => import('tiktok-live-connector'), WebSocketImpl, staleMs = 60000 }) {
-  const status = { mode: 'tikfinity', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, lastEventAt: 0, lastEventType: '', since: 0 };
+  const status = { mode: 'direct', state: 'idle', message: 'Bağlı değil', counts: { chat: 0, gift: 0, like: 0, follow: 0, share: 0, member: 0 }, lastEventAt: 0, lastEventType: '', since: 0 };
   let opts = null, wanted = false, transport = null, retryTimer = null, attempt = 0, generation = 0;
   let connectedMessage = '', lastAnyAt = 0, stale = false;
   // An open TikFinity socket does not prove TikFinity is attached to the LIVE, so warn when nothing arrives.

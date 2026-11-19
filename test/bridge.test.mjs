@@ -33,7 +33,7 @@ test('connection errors become clear Turkish messages with the right retry polic
   class SignatureRateLimitError extends Error {}
   assert.equal(explainError(new UserOfflineError('x'), 'esref').wait, true);
   assert.match(explainError(new UserOfflineError('x'), 'esref').message, /@esref şu an canlı yayında değil/);
-  assert.match(explainError(new SignatureRateLimitError('x')).message, /TikFinity/);
+  assert.match(explainError(new SignatureRateLimitError('x')).message, /token/);
   assert.equal(explainError(new Error('TikTok paketi eksik')).fatal, true);
   assert.match(explainError(new Error('getaddrinfo ENOTFOUND www.tiktok.com')).message, /İnternet/);
 });

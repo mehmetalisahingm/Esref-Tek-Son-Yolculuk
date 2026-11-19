@@ -60,16 +60,16 @@ Overlay sesi otomatik başlatamazsa sağ üstte **🔊 Sesi başlat** düğmesi 
 
 Köprü, yayındaki **yorum, hediye, beğeni, takip, paylaşım, katılım ve izleyici sayısını** oyuna taşır. Kontrol panelindeki **TikTok LIVE Köprüsü** bölümünde iki yol var:
 
-**1. TikFinity · WebSocket (önerilen, varsayılan)**
-1. [TikFinity](https://tikfinity.zerody.one/)'nin **Windows masaüstü uygulamasını** kur. Uygulama oyunla aynı bilgisayarda açık olmalı.
-2. TikFinity'de TikTok hesabınla giriş yap ve yayınına bağlan; TikFinity'de bağlı göründüğünden emin ol.
-3. Panelde **TikFinity · WebSocket** sekmesinde adresi `ws://127.0.0.1:21213/` olarak bırak, **Yayına Bağlan**'a bas.
-4. Olaylar TikFinity'nin yerel WebSocket akışından gelir; imza anahtarı ya da ücretli servis gerekmez. Bağlıyken 60 saniye olay gelmezse panel uyarır (çoğunlukla TikFinity yayına bağlı değildir).
+**1. Doğrudan WebSocket (varsayılan)**
+1. TikTok'ta canlı yayını aç.
+2. Panelde kullanıcı adını **@ olmadan** yaz, **API token** alanına imza servisi token'ını yapıştır ve **Yayına Bağlan**'a bas. Token bir kez girilir, bilgisayardaki `config.local.json` dosyasında saklanır; tarayıcıya ve GitHub'a gitmez.
+3. TikTok canlı WebSocket bağlantısının imzalanmasını istediği için token gerekir. Anahtarsız kullanım çok sınırlıdır.
+4. **TikTok şifreni ya da `sessionid` çerezini asla yapıştırma**; bunlar hesabına tam erişim verir.
+5. Yayın henüz açık değilse köprü bekler ve yayın başlayınca kendiliğinden bağlanır.
 
-**2. Doğrudan (yedek)**
-1. TikTok'ta canlı yayını aç, panelde **Doğrudan** sekmesinde kullanıcı adını **@ olmadan** yaz ve bağlan.
-2. Bu yol TikTok'un istediği imzayı üçüncü taraf bir imza servisinden alır; anahtarsız kullanım sınırlı olduğu için takılabilir. Takılırsa TikFinity yolunu kullan. Anahtarın varsa "Gelişmiş" bölümüne yapıştırabilirsin; yalnızca `config.local.json`'da saklanır.
-3. Yayın henüz açık değilse köprü bekler ve yayın başlayınca kendiliğinden bağlanır.
+**2. TikFinity (yedek, token yoksa)**
+1. [TikFinity](https://tikfinity.zerody.one/)'nin Windows masaüstü uygulamasını aynı bilgisayarda aç, TikTok hesabınla yayınına bağla.
+2. Panelde **TikFinity** sekmesinde adresi `ws://127.0.0.1:21213/` olarak bırak ve bağlan. Bağlıyken 60 saniye olay gelmezse panel uyarır.
 
 **Köprü çalışıyor mu?** Paneldeki teşhis kutusu son olayın ne zaman geldiğini ve kaç yorum / hediye / beğeni / takip / katılım geldiğini canlı gösterir. Bağlantı koparsa köprü kendisi yeniden bağlanır; yayın biterse durur.
 

@@ -94,27 +94,20 @@
 
         <div class="panel bridge-panel"><div class="panel-heading"><div class="panel-icon green">◉</div><div><h3>TikTok LIVE Köprüsü</h3><p>Yayındaki yorum, hediye, beğeni ve takipleri oyuna taşır</p></div><span id="connection-pip" class="connection-pip">DEMO</span></div>
           <div class="mode-tabs" role="tablist" aria-label="Köprü türü">
-            <button type="button" data-mode="tikfinity" class="active" role="tab">TikFinity · WebSocket <small>önerilen</small></button>
-            <button type="button" data-mode="direct" role="tab">Doğrudan</button>
+            <button type="button" data-mode="direct" class="active" role="tab">Doğrudan WebSocket</button>
+            <button type="button" data-mode="tikfinity" role="tab">TikFinity <small>yedek</small></button>
           </div>
-          <div class="mode-pane" data-pane="tikfinity">
-            <ol class="setup-steps">
-              <li><a href="https://tikfinity.zerody.one/" target="_blank" rel="noopener noreferrer">TikFinity</a>'nin Windows masaüstü uygulamasını indir ve kur. Uygulama <b>bu bilgisayarda</b> açık olmalı.</li>
-              <li>TikFinity'de TikTok hesabınla giriş yap ve yayınına bağlan. TikFinity'de bağlı göründüğünden emin ol.</li>
-              <li>Aşağıdan <b>Yayına Bağlan</b>'a bas. Olaylar TikFinity'nin yerel WebSocket akışından gelir; imza anahtarı gerekmez.</li>
-            </ol>
-            <label class="input-label" for="tikfinity-url">WEBSOCKET ADRESİ</label>
-            <input id="tikfinity-url" class="plain-input" type="text" autocomplete="off" value="ws://127.0.0.1:21213/">
-            <p class="setting-note">Varsayılan adres genelde doğrudur; TikFinity'de farklı bir port ayarladıysan burayı değiştir.</p>
-          </div>
-          <div class="mode-pane" data-pane="direct" hidden>
+          <div class="mode-pane" data-pane="direct">
             <label class="input-label" for="tiktok-user">TIKTOK KULLANICI ADI</label>
             <div class="input-with-prefix"><span>@</span><input id="tiktok-user" type="text" autocomplete="off" placeholder="kullaniciadi" maxlength="26"></div>
-            <p class="setting-note">Bu yol TikTok'a doğrudan bağlanır ama TikTok'un istediği imzayı üçüncü taraf bir imza servisinden alır. Anahtarsız kullanım sınırlı olduğu için sık sık takılabilir; takılırsa TikFinity yolunu kullan.</p>
-            <details class="advanced"><summary>Gelişmiş: imza anahtarı <b id="sign-key-state"></b></summary>
-              <div class="setting-inline"><input id="sign-key" class="plain-input" type="password" autocomplete="off" placeholder="İmza servisi API anahtarı"><button id="sign-key-clear" class="small-button" type="button" hidden>Sil</button></div>
-              <p class="setting-note">Anahtarın varsa buraya yapıştır; sadece bu bilgisayarda saklanır.</p>
-            </details>
+            <label class="input-label key-label" for="sign-key">API TOKEN <b id="sign-key-state"></b></label>
+            <div class="setting-inline"><input id="sign-key" class="plain-input" type="password" autocomplete="off" placeholder="İmza servisi API token'ını yapıştır"><button id="sign-key-clear" class="small-button" type="button" hidden>Sil</button></div>
+            <p class="setting-note">Oyun TikTok'un canlı WebSocket'ine doğrudan bağlanır; TikTok bağlantının imzalanmasını istediği için imza servisi token'ı gerekir. Token bir kez yapıştırılır, sadece bu bilgisayarda (<code>config.local.json</code>) saklanır, tarayıcıya ve GitHub'a gitmez. <b>TikTok şifreni ya da "sessionid" çerezini buraya yapıştırma.</b></p>
+          </div>
+          <div class="mode-pane" data-pane="tikfinity" hidden>
+            <label class="input-label" for="tikfinity-url">TIKFINITY WEBSOCKET ADRESİ</label>
+            <input id="tikfinity-url" class="plain-input" type="text" autocomplete="off" value="ws://127.0.0.1:21213/">
+            <p class="setting-note">Token yoksa: TikFinity'nin Windows uygulaması bu bilgisayarda açık ve yayınına bağlıyken olayları onun yerel akışından okur.</p>
           </div>
           <div class="button-row"><button id="connect-btn" class="button-primary">◉ Yayına Bağlan</button><button id="disconnect-btn" class="button-secondary" disabled>Bağlantıyı kes</button></div>
           <div class="connection-hint" id="connection-hint">Şu anda demo modu açık.</div>
