@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createBridge, DEFAULT_TIKFINITY_URL } from './bridge.mjs';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -238,7 +238,7 @@ function originAllowed(req) {
 }
 // ——— Live bridge settings (kept in a local, git-ignored file; the sign key never leaves this computer) ———
 const CONFIG_FILE = process.env.SON_YOLCULUK_CONFIG || path.join(DIR, 'config.local.json');
-let bridgeConfig = { mode: 'direct', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL };
+let bridgeConfig = { mode: 'direct', username: '', signApiKey: '', tikfinityUrl: DEFAULT_TIKFINITY_URL, autoConnect: false };
 try { bridgeConfig = { ...bridgeConfig, ...JSON.parse(await fs.readFile(CONFIG_FILE, 'utf8')) }; } catch {}
 async function saveBridgeConfig() {
   try { await fs.writeFile(CONFIG_FILE, JSON.stringify(bridgeConfig, null, 2)); } catch (err) { console.warn('Ayar dosyası yazılamadı:', err?.message || err); }
@@ -307,7 +307,31 @@ function ingestEvent(ev, u) {
     case 'end': event('info', 'YAYIN', 'Canlı yayın sona erdi'); emit(); break;
   }
 }
-const bridge = createBridge({ onEvent: ingest, onStatus: () => emit() });
+// Every live event is also printed in the server window, so it is obvious whether TikTok is sending anything.
+const LABELS = { chat: '💬', member: '↗', follow: '🕯️', share: '↻', like: '❤️', gift: '🎁' };
+let likeLog = new Map(), likeLogTimer = null;
+function logEvent(ev) {
+  const who = ev.user ? `@${ev.user.name}` : '';
+  if (ev.type === 'like') {
+    likeLog.set(who, (likeLog.get(who) || 0) + (ev.count || 1));
+    likeLogTimer ||= setTimeout(() => { console.log(`[olay] ❤️ ${[...likeLog].map(([n, c]) => `${n} +${c}`).join(', ')}`); likeLog = new Map(); likeLogTimer = null; }, 2000);
+    return;
+  }
+  if (ev.type === 'viewers' || ev.type === 'unknown') return;
+  const extra = ev.type === 'chat' ? `: ${ev.comment}` : ev.type === 'gift' ? ` ${ev.gift.name} ×${ev.gift.repeatCount}` : '';
+  console.log(`[olay] ${LABELS[ev.type] || ev.type} ${who}${extra}`);
+}
+let lastLoggedState = '';
+const bridge = createBridge({
+  // Tests can swap in a stand-in for tiktok-live-connector.
+  ...(process.env.SON_YOLCULUK_CONNECTOR ? { loadConnector: () => import(pathToFileURL(path.resolve(process.env.SON_YOLCULUK_CONNECTOR)).href) } : {}),
+  onEvent: ev => { logEvent(ev); ingest(ev); },
+  onStatus: st => {
+    const line = `${st.state}|${st.message}`;
+    if (line !== lastLoggedState) { lastLoggedState = line; console.log(`[köprü] ${st.state.toUpperCase()} · ${st.message}`); }
+    emit();
+  },
+});
 const isLive = () => bridge.status.state === 'connected';
 async function connect(body) {
   const mode = body.mode === 'tikfinity' ? 'tikfinity' : 'direct';
@@ -321,6 +345,7 @@ async function connect(body) {
   await saveBridgeConfig();
   // A fresh connection replaces the demo procession with real viewers.
   clearState(false); state.username = username; emit();
+  bridgeConfig.autoConnect = true; await saveBridgeConfig();
   const st = await bridge.start({ mode, username, signApiKey: bridgeConfig.signApiKey, tikfinityUrl });
   if (st.state === 'error') throw Object.assign(new Error(st.message), { status: 400 });
   return { ok: true, state: st.state, message: st.message };
@@ -436,7 +461,7 @@ const server = http.createServer(async (req, res) => {
         }
         case '/api/reset': { clearState(false); emit(); return respond(res, 200, { ok: true }); }
         case '/api/connect': return respond(res, 200, await connect(body));
-        case '/api/disconnect': { bridge.stop(); emit(); return respond(res, 200, { ok: true }); }
+        case '/api/disconnect': { bridge.stop(); bridgeConfig.autoConnect = false; await saveBridgeConfig(); emit(); return respond(res, 200, { ok: true }); }
         case '/api/bridge-settings': {
           if (typeof body.signApiKey === 'string' && body.signApiKey.trim()) bridgeConfig.signApiKey = body.signApiKey.trim().slice(0, 200);
           if (body.clearSignKey) bridgeConfig.signApiKey = '';
@@ -476,4 +501,12 @@ server.listen(PORT, HOST, () => {
   console.log(`\n🎬 Eşref Tek | Son Yolculuk: http://${HOST === '127.0.0.1' ? 'localhost' : HOST}:${PORT}`);
   console.log(`📺 OBS / TikTok LIVE Studio kaynağı: http://localhost:${PORT}/?overlay=1`);
   if (!existsSync(THREE_BUILD)) console.log('⚠  3D motoru yerelde yok. Klasörde "npm install" çalıştır (yoksa CDN denenir).');
+  import('tiktok-live-connector')
+    .then(() => console.log('✅ TikTok bağlayıcısı hazır'))
+    .catch(() => console.log('❌ TikTok bağlayıcısı kurulu değil! Bu klasörde "npm install" çalıştır, yoksa doğrudan bağlantı çalışmaz.'));
+  // Reconnect to the last stream automatically after a restart (e.g. after "git pull").
+  if (bridgeConfig.autoConnect && (bridgeConfig.mode === 'tikfinity' || bridgeConfig.username)) {
+    console.log(`🔁 Son bağlantı yeniden kuruluyor: ${bridgeConfig.mode === 'tikfinity' ? 'TikFinity' : '@' + bridgeConfig.username}`);
+    connect({ mode: bridgeConfig.mode, username: bridgeConfig.username, tikfinityUrl: bridgeConfig.tikfinityUrl }).catch(err => console.log(`[köprü] Otomatik bağlantı başarısız: ${err.message}`));
+  }
 });

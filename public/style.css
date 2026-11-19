@@ -368,3 +368,6 @@ body.overlay .game-frame{position:fixed;top:0;left:50%;transform:translateX(-50%
 .float-lane{left:calc(var(--u)*6px);right:auto;bottom:calc(var(--u)*340px)}
 .sound-gate{left:calc(var(--u)*14px);right:auto;top:calc(var(--u)*560px)}
 .scene-vignette{background:linear-gradient(180deg,rgba(3,6,10,.88) 0,rgba(3,6,10,.4) 11%,transparent 17%,transparent 70%,rgba(3,6,8,.45) 80%,rgba(2,4,6,.85) 94%,#020405 100%),radial-gradient(ellipse at 40% 45%,transparent 55%,rgba(0,0,0,.4) 100%)!important}
+.bridge-warn{position:absolute;left:calc(var(--u)*10px);top:calc(var(--u)*120px);z-index:7;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:calc(var(--u)*6px) calc(var(--u)*10px);border-radius:calc(var(--u)*8px);background:#5a0f18ee;border:1px solid #ff8090;color:#fff;font-size:calc(var(--u)*12px);font-weight:800;box-shadow:0 4px 14px #000a;animation:breathe 2s ease-in-out infinite}
+.bridge-warn[hidden]{display:none}
+.bridge-warn:not([hidden])~.alert-lane{top:calc(var(--u)*156px)}
