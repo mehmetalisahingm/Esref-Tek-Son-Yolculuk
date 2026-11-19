@@ -115,10 +115,26 @@
         </div>
 
         <div class="panel"><div class="panel-heading"><div class="panel-icon gold">♫</div><div><h3>Müzik ve Ses</h3><p>Yayın ekranında (overlay) çalar</p></div></div>
-          <label class="input-label" for="music-upload">ŞARKI</label>
           <div class="now-playing" id="music-name">♫ Chopin — Cenaze Marşı (varsayılan)</div>
-          <div class="setting-inline"><input id="music-upload" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input"><button id="music-default-btn" class="small-button" disabled>Varsayılana dön</button></div>
-          <p class="setting-note">Kendi MP3 / M4A / OGG / WAV dosyanı yükle (en fazla 15 MB). Döngüde çalar, hediye ve taht duyurularında kısa süre kısılır. Dosya sadece bu bilgisayarda saklanır, GitHub'a gitmez. Telifli bir şarkıyı TikTok canlı yayında sessize alabilir ya da uyarı verebilir.</p>
+          <div class="playlist-slots">
+            <div class="playlist-slot">
+              <div class="setting-inline"><label class="input-label" for="music-upload">1. SES · <a href="https://youtube.com/shorts/GFqF4v7H0hE" target="_blank" rel="noopener noreferrer">YouTube referansı 1</a></label><button id="music-slot-1-clear" class="small-button" disabled>Kaldır</button></div>
+              <input id="music-upload" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
+              <small id="music-slot-1-name" class="playlist-status">Dosya yüklenmedi</small>
+            </div>
+            <div class="playlist-slot">
+              <div class="setting-inline"><label class="input-label" for="music-upload-2">2. SES · <a href="https://youtube.com/shorts/FxYN7qI83k4" target="_blank" rel="noopener noreferrer">YouTube referansı 2</a></label><button id="music-slot-2-clear" class="small-button" disabled>Kaldır</button></div>
+              <input id="music-upload-2" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
+              <small id="music-slot-2-name" class="playlist-status">Dosya yüklenmedi</small>
+            </div>
+            <div class="playlist-slot">
+              <div class="setting-inline"><label class="input-label" for="music-upload-3">3. SES · <a href="https://youtube.com/shorts/pl-jrOZ1jEM" target="_blank" rel="noopener noreferrer">YouTube referansı 3</a></label><button id="music-slot-3-clear" class="small-button" disabled>Kaldır</button></div>
+              <input id="music-upload-3" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" class="upload-input">
+              <small id="music-slot-3-name" class="playlist-status">Dosya yüklenmedi</small>
+            </div>
+          </div>
+          <button id="music-default-btn" class="small-button" disabled>Tümünü kaldır · Varsayılan müzik</button>
+          <p class="setting-note">Yukarıdaki üç bağlantı ses referansıdır; YouTube'dan otomatik ses çekilmez. Yayın için kullanım hakkına sahip olduğun MP3 / M4A / OGG / WAV dosyalarını sırayla yükle (her biri en fazla 15 MB). Sesler <b>1 → 2 → 3 → 1</b> olarak döner; boş yuvalar atlanır. Şarkılar yalnızca bu bilgisayarda saklanır ve GitHub'a gitmez. TikTok telifli içeriği susturabilir.</p>
           <div class="toggle-row">
             <label class="switch"><input type="checkbox" id="music-toggle" checked><span></span>Müzik</label>
             <label class="switch"><input type="checkbox" id="sfx-toggle" checked><span></span>Efektler</label>
